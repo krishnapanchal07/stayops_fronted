@@ -1,0 +1,73 @@
+/* Only Leaflet-specific visuals; page and card layouts use Tailwind. */
+.stayops-discovery-map .leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--color-primary-soft);
+}
+.stayops-discovery-map .stayops-price-marker {
+  background: none;
+  border: none;
+}
+.stayops-discovery-map .stayops-price-marker > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 9px;
+  background: white;
+  color: var(--color-primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 3px 12px #30246025;
+  transition:
+    transform 0.18s,
+    background 0.18s,
+    color 0.18s;
+}
+.stayops-discovery-map .stayops-price-marker > svg {
+  display: block;
+  margin: -1px auto 0;
+  width: 12px;
+  height: 8px;
+  fill: var(--color-primary);
+}
+.stayops-discovery-map .stayops-price-marker.is-highlighted > span {
+  background: var(--color-primary);
+  color: white;
+  transform: translateY(-3px) scale(1.08);
+}
+.stayops-discovery-map .stayops-price-marker.is-compact > span {
+  height: 18px;
+  width: 18px;
+  margin: 13px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: var(--color-primary);
+  font-size: 0;
+}
+.stayops-discovery-map .stayops-price-marker.is-compact > svg {
+  display: none;
+}
+.stayops-discovery-map .stayops-price-marker:focus-visible {
+  outline: 3px solid var(--color-primary-dark);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.stayops-discovery-map .leaflet-control-attribution {
+  max-width: 100%;
+  font-size: 10px;
+  background: #fffffff2;
+}
+.stayops-discovery-map .leaflet-control-zoom {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.stayops-discovery-map .leaflet-control-zoom a {
+  color: var(--color-primary-dark);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stayops-discovery-map .stayops-price-marker > span {
+    transition: none;
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "user-tenant": {
+    "room": "205-B",
+    "stats": [
+      {
+        "id": "room",
+        "label": "My Room",
+        "value": "205-B",
+        "tone": "primary",
+        "hint": "Sunrise PG"
+      },
+      {
+        "id": "due",
+        "label": "Due Amount",
+        "value": "₹8,450",
+        "tone": "danger",
+        "hint": "Due 08 Sep 2026"
+      },
+      {
+        "id": "complaints",
+        "label": "Open Complaints",
+        "value": "2",
+        "tone": "warning",
+        "hint": "1 high priority"
+      },
+      {
+        "id": "notices",
+        "label": "New Notices",
+        "value": "5",
+        "tone": "info",
+        "hint": "This week"
+      }
+    ],
+    "rent": {
+      "total": 12000,
+      "paid": 3550,
+      "due": 8450,
+      "dueDate": "08 Sep 2026"
+    },
+    "upcomingPayments": [
+      {
+        "id": "tp1",
+        "title": "September Rent",
+        "amount": 8450,
+        "dueDate": "08 Sep 2026",
+        "status": "Due"
+      },
+      {
+        "id": "tp2",
+        "title": "Maintenance fee",
+        "amount": 500,
+        "dueDate": "12 Sep 2026",
+        "status": "Upcoming"
+      }
+    ],
+    "recentNotices": [
+      {
+        "id": "n1",
+        "title": "Water supply downtime on Sunday",
+        "date": "05 Sep 2026",
+        "isNew": true
+      },
+      {
+        "id": "n2",
+        "title": "Festival dinner at 8:00 PM",
+        "date": "04 Sep 2026",
+        "isNew": true
+      },
+      {
+        "id": "n3",
+        "title": "Visitor policy update",
+        "date": "01 Sep 2026",
+        "isNew": false
+      }
+    ]
+  }
+}

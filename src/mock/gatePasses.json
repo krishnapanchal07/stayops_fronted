@@ -1,0 +1,44 @@
+[
+  {
+    "id": "gp-2012",
+    "passCode": "GP-2012",
+    "leaveId": "leave-2012",
+    "tenantId": "tenant-aarav",
+    "tenantName": "Aarav Mehta",
+    "propertyId": "prop-sunrise",
+    "propertyName": "Sunrise PG",
+    "roomNumber": "210",
+    "startDateTime": "2026-09-09T07:00:00+05:30",
+    "expectedReturnDateTime": "2026-09-12T21:00:00+05:30",
+    "status": "ACTIVE",
+    "createdAt": "2026-09-05T11:00:00+05:30"
+  },
+  {
+    "id": "gp-2013",
+    "passCode": "GP-2013",
+    "leaveId": "leave-2013",
+    "tenantId": "tenant-amit",
+    "tenantName": "Amit Verma",
+    "propertyId": "prop-sunrise",
+    "propertyName": "Sunrise PG",
+    "roomNumber": "302",
+    "startDateTime": "2026-09-06T07:00:00+05:30",
+    "expectedReturnDateTime": "2026-09-06T08:00:00+05:30",
+    "status": "USED",
+    "createdAt": "2026-09-05T20:00:00+05:30"
+  },
+  {
+    "id": "gp-2014",
+    "passCode": "GP-2014",
+    "leaveId": "leave-2014",
+    "tenantId": "user-tenant",
+    "tenantName": "Rahul Sharma",
+    "propertyId": "prop-sunrise",
+    "propertyName": "Sunrise PG",
+    "roomNumber": "205",
+    "startDateTime": "2026-08-12T08:00:00+05:30",
+    "expectedReturnDateTime": "2026-08-16T20:00:00+05:30",
+    "status": "USED",
+    "createdAt": "2026-08-10T12:00:00+05:30"
+  }
+]

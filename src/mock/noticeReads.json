@@ -1,0 +1,6 @@
+[
+  { "tenantId": "user-tenant", "noticeId": "notice-holiday", "readAt": "2026-09-02T18:20:00" },
+  { "tenantId": "user-tenant", "noticeId": "notice-visitor-policy", "readAt": "2026-09-03T09:10:00" },
+  { "tenantId": "tenant-sneha", "noticeId": "notice-holiday", "readAt": "2026-09-02T11:00:00" },
+  { "tenantId": "tenant-sneha", "noticeId": "notice-greenview-mess", "readAt": "2026-09-03T19:40:00" }
+]

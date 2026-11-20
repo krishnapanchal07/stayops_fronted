@@ -1,0 +1,71 @@
+{
+  "stats": [
+    {
+      "id": "today",
+      "label": "Visitors Today",
+      "value": "18",
+      "tone": "primary",
+      "hint": "6 still inside"
+    },
+    {
+      "id": "expected",
+      "label": "Expected Visitors",
+      "value": "9",
+      "tone": "info",
+      "hint": "Approved passes"
+    },
+    {
+      "id": "inside",
+      "label": "Currently Inside",
+      "value": "6",
+      "tone": "warning",
+      "hint": "Live gate count"
+    },
+    {
+      "id": "passes",
+      "label": "Gate Passes Today",
+      "value": "11",
+      "tone": "success",
+      "hint": "4 pending checkout"
+    }
+  ],
+  "recentCheckIns": [
+    {
+      "id": "in1",
+      "name": "Vikram Rao",
+      "tenant": "Rahul Sharma · 205-B",
+      "time": "4:10 PM",
+      "gate": "Main Gate"
+    },
+    {
+      "id": "in2",
+      "name": "Ananya Das",
+      "tenant": "Sneha Iyer · 204-B",
+      "time": "3:42 PM",
+      "gate": "Main Gate"
+    },
+    {
+      "id": "in3",
+      "name": "Delivery — Swiggy",
+      "tenant": "Aarav Mehta · 112-A",
+      "time": "2:55 PM",
+      "gate": "Service Gate"
+    }
+  ],
+  "recentCheckOuts": [
+    {
+      "id": "out1",
+      "name": "Neeraj Kulkarni",
+      "tenant": "Kabir Shah · 310-A",
+      "time": "3:18 PM",
+      "gate": "Main Gate"
+    },
+    {
+      "id": "out2",
+      "name": "Courier — Delhivery",
+      "tenant": "Priya Nair · 118-C",
+      "time": "1:40 PM",
+      "gate": "Service Gate"
+    }
+  ]
+}

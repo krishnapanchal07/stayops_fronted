@@ -1,0 +1,488 @@
+[
+  {
+    "id": "inq-001",
+    "firstName": "Ananya",
+    "lastName": "Das",
+    "fullName": "Ananya Das",
+    "email": "ananya.das@email.com",
+    "phone": "9876509988",
+    "userId": null,
+    "propertyId": "prop-sunrise",
+    "propertyName": "Sunrise PG",
+    "roomId": "room-sunrise-205",
+    "roomNumber": "205",
+    "bedId": "bed-205-b",
+    "bedNumber": "B",
+    "listingTitle": "205 - B",
+    "sharingType": "2_SHARING",
+    "monthlyRent": 8000,
+    "preferredMoveIn": "2026-09-10",
+    "message": "Looking for a lower-floor 2 sharing bed at Sunrise if 205-B is still open.",
+    "status": "CONVERTED",
+    "statusHistory": [
+      {
+        "id": "inq-001-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Ananya Das",
+        "occurredAt": "2026-08-20T11:10:00"
+      },
+      {
+        "id": "inq-001-h2",
+        "from": "SUBMITTED",
+        "to": "CONTACTED",
+        "note": "Called and confirmed preferred dates.",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-08-21T16:40:00"
+      },
+      {
+        "id": "inq-001-h3",
+        "from": "CONTACTED",
+        "to": "SHORTLISTED",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-08-24T10:05:00"
+      },
+      {
+        "id": "inq-001-h4",
+        "from": "SHORTLISTED",
+        "to": "APPROVED",
+        "actor": "John Doe",
+        "occurredAt": "2026-08-27T09:30:00"
+      },
+      {
+        "id": "inq-001-h5",
+        "from": "APPROVED",
+        "to": "CONVERTED",
+        "note": "Created onboarding tenant without bed allocation.",
+        "actor": "John Doe",
+        "occurredAt": "2026-08-28T12:00:00"
+      }
+    ],
+    "tenantId": "tenant-ananya",
+    "createdAt": "2026-08-20",
+    "updatedAt": "2026-08-28"
+  },
+  {
+    "id": "inq-002",
+    "firstName": "Dev",
+    "lastName": "Kulkarni",
+    "fullName": "Dev Kulkarni",
+    "email": "dev.kulkarni@email.com",
+    "phone": "9876502211",
+    "userId": null,
+    "propertyId": "prop-sunrise",
+    "propertyName": "Sunrise PG",
+    "roomId": "room-sunrise-302",
+    "roomNumber": "302",
+    "bedId": "bed-302-c",
+    "bedNumber": "C",
+    "listingTitle": "302 - C",
+    "sharingType": "3_SHARING",
+    "monthlyRent": 6500,
+    "preferredMoveIn": "2026-09-20",
+    "message": "Need a budget 3 sharing bed near college. Flexible on floor.",
+    "status": "CONVERTED",
+    "statusHistory": [
+      {
+        "id": "inq-002-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Dev Kulkarni",
+        "occurredAt": "2026-08-30T18:20:00"
+      },
+      {
+        "id": "inq-002-h2",
+        "from": "SUBMITTED",
+        "to": "CONTACTED",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-08-31T11:00:00"
+      },
+      {
+        "id": "inq-002-h3",
+        "from": "CONTACTED",
+        "to": "SHORTLISTED",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-09-01T15:10:00"
+      },
+      {
+        "id": "inq-002-h4",
+        "from": "SHORTLISTED",
+        "to": "APPROVED",
+        "actor": "John Doe",
+        "occurredAt": "2026-09-02T09:45:00"
+      },
+      {
+        "id": "inq-002-h5",
+        "from": "APPROVED",
+        "to": "CONVERTED",
+        "note": "Prospect tenant created. Bed allocation pending.",
+        "actor": "John Doe",
+        "occurredAt": "2026-09-02T10:20:00"
+      }
+    ],
+    "tenantId": "tenant-prospect",
+    "createdAt": "2026-08-30",
+    "updatedAt": "2026-09-02"
+  },
+  {
+    "id": "inq-003",
+    "firstName": "Isha",
+    "lastName": "Patel",
+    "fullName": "Isha Patel",
+    "email": "isha.patel@email.com",
+    "phone": "9876510011",
+    "userId": null,
+    "propertyId": "prop-lake",
+    "propertyName": "Lakeside Stay",
+    "roomId": "room-lake-108",
+    "roomNumber": "108",
+    "bedId": "bed-l108-a",
+    "bedNumber": "A",
+    "listingTitle": "108 - A",
+    "sharingType": "2_SHARING",
+    "monthlyRent": 12000,
+    "preferredMoveIn": "2026-09-15",
+    "message": "Want the lake-facing premium 2 sharing room. Documents ready.",
+    "status": "CONVERTED",
+    "statusHistory": [
+      {
+        "id": "inq-003-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Isha Patel",
+        "occurredAt": "2026-08-12T14:00:00"
+      },
+      {
+        "id": "inq-003-h2",
+        "from": "SUBMITTED",
+        "to": "CONTACTED",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-08-13T10:15:00"
+      },
+      {
+        "id": "inq-003-h3",
+        "from": "CONTACTED",
+        "to": "SHORTLISTED",
+        "actor": "John Doe",
+        "occurredAt": "2026-08-16T17:30:00"
+      },
+      {
+        "id": "inq-003-h4",
+        "from": "SHORTLISTED",
+        "to": "APPROVED",
+        "actor": "John Doe",
+        "occurredAt": "2026-08-19T09:00:00"
+      },
+      {
+        "id": "inq-003-h5",
+        "from": "APPROVED",
+        "to": "CONVERTED",
+        "note": "Onboarding tenant created. Bed A reserved until move-in.",
+        "actor": "John Doe",
+        "occurredAt": "2026-08-20T11:40:00"
+      }
+    ],
+    "tenantId": "tenant-isha",
+    "createdAt": "2026-08-12",
+    "updatedAt": "2026-08-20"
+  },
+  {
+    "id": "inq-004",
+    "firstName": "Neha",
+    "lastName": "Joshi",
+    "fullName": "Neha Joshi",
+    "email": "neha.joshi@email.com",
+    "phone": "9876522100",
+    "userId": null,
+    "propertyId": "prop-sunrise",
+    "propertyName": "Sunrise PG",
+    "roomId": "room-sunrise-205",
+    "roomNumber": "205",
+    "bedId": "bed-205-b",
+    "bedNumber": "B",
+    "listingTitle": "205 - B",
+    "sharingType": "2_SHARING",
+    "monthlyRent": 8000,
+    "preferredMoveIn": "2026-09-18",
+    "message": "Interested in 205-B. Need AC, attached bathroom and Wi-Fi.",
+    "status": "SUBMITTED",
+    "statusHistory": [
+      {
+        "id": "inq-004-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Neha Joshi",
+        "occurredAt": "2026-09-04T19:25:00"
+      }
+    ],
+    "tenantId": null,
+    "createdAt": "2026-09-04",
+    "updatedAt": "2026-09-04"
+  },
+  {
+    "id": "inq-005",
+    "firstName": "Arjun",
+    "lastName": "Mehta",
+    "fullName": "Arjun Mehta",
+    "email": "arjun.mehta@email.com",
+    "phone": "9876533400",
+    "userId": null,
+    "propertyId": "prop-greenview",
+    "propertyName": "GreenView Hostel",
+    "roomId": "room-green-112",
+    "roomNumber": "112",
+    "bedId": "bed-g112-b",
+    "bedNumber": "B",
+    "listingTitle": "112 - B",
+    "sharingType": "2_SHARING",
+    "monthlyRent": 7200,
+    "preferredMoveIn": "2026-09-12",
+    "message": "Called after seeing GreenView 112. Can visit this weekend.",
+    "status": "CONTACTED",
+    "statusHistory": [
+      {
+        "id": "inq-005-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Arjun Mehta",
+        "occurredAt": "2026-09-01T09:40:00"
+      },
+      {
+        "id": "inq-005-h2",
+        "from": "SUBMITTED",
+        "to": "CONTACTED",
+        "note": "Phone discussion completed. Visit scheduled.",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-09-02T13:15:00"
+      }
+    ],
+    "tenantId": null,
+    "createdAt": "2026-09-01",
+    "updatedAt": "2026-09-02"
+  },
+  {
+    "id": "inq-006",
+    "firstName": "Kavya",
+    "lastName": "Reddy",
+    "fullName": "Kavya Reddy",
+    "email": "kavya.reddy@email.com",
+    "phone": "9876544500",
+    "userId": null,
+    "propertyId": "prop-oak",
+    "propertyName": "Oak Street Residency",
+    "roomId": "room-oak-204",
+    "roomNumber": "204",
+    "bedId": "bed-o204-a",
+    "bedNumber": "A",
+    "listingTitle": "204 - A",
+    "sharingType": "2_SHARING",
+    "monthlyRent": 8000,
+    "preferredMoveIn": "2026-09-25",
+    "message": "Prefer Oak Street because it is closer to the metro.",
+    "status": "SHORTLISTED",
+    "statusHistory": [
+      {
+        "id": "inq-006-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Kavya Reddy",
+        "occurredAt": "2026-08-28T08:50:00"
+      },
+      {
+        "id": "inq-006-h2",
+        "from": "SUBMITTED",
+        "to": "CONTACTED",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-08-29T12:20:00"
+      },
+      {
+        "id": "inq-006-h3",
+        "from": "CONTACTED",
+        "to": "SHORTLISTED",
+        "note": "Parents visited. Holding as shortlist pending approval.",
+        "actor": "John Doe",
+        "occurredAt": "2026-09-01T16:00:00"
+      }
+    ],
+    "tenantId": null,
+    "createdAt": "2026-08-28",
+    "updatedAt": "2026-09-01"
+  },
+  {
+    "id": "inq-007",
+    "firstName": "Rohan",
+    "lastName": "Sen",
+    "fullName": "Rohan Sen",
+    "email": "rohan.sen@email.com",
+    "phone": "9876555600",
+    "userId": null,
+    "propertyId": "prop-palm",
+    "propertyName": "Palm Court Hostel",
+    "roomId": "room-palm-115",
+    "roomNumber": "115",
+    "bedId": "bed-p115-c",
+    "bedNumber": "C",
+    "listingTitle": "115 - C",
+    "sharingType": "3_SHARING",
+    "monthlyRent": 5500,
+    "preferredMoveIn": "2026-09-08",
+    "message": "Ready to move in this week if the 3 sharing bed is approved.",
+    "status": "APPROVED",
+    "statusHistory": [
+      {
+        "id": "inq-007-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Rohan Sen",
+        "occurredAt": "2026-08-26T10:05:00"
+      },
+      {
+        "id": "inq-007-h2",
+        "from": "SUBMITTED",
+        "to": "CONTACTED",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-08-27T14:30:00"
+      },
+      {
+        "id": "inq-007-h3",
+        "from": "CONTACTED",
+        "to": "SHORTLISTED",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-08-30T11:10:00"
+      },
+      {
+        "id": "inq-007-h4",
+        "from": "SHORTLISTED",
+        "to": "APPROVED",
+        "note": "Approved for onboarding. Convert when documents are collected.",
+        "actor": "John Doe",
+        "occurredAt": "2026-09-03T09:20:00"
+      }
+    ],
+    "tenantId": null,
+    "createdAt": "2026-08-26",
+    "updatedAt": "2026-09-03"
+  },
+  {
+    "id": "inq-008",
+    "firstName": "Manish",
+    "lastName": "Gupta",
+    "fullName": "Manish Gupta",
+    "email": "manish.gupta@email.com",
+    "phone": "9876566700",
+    "userId": null,
+    "propertyId": "prop-oak",
+    "propertyName": "Oak Street Residency",
+    "roomId": "room-oak-204",
+    "roomNumber": "204",
+    "bedId": "bed-o204-b",
+    "bedNumber": "B",
+    "listingTitle": "204 - B",
+    "sharingType": "2_SHARING",
+    "monthlyRent": 8000,
+    "preferredMoveIn": "2026-09-05",
+    "message": "Need a room immediately. Can pay deposit today.",
+    "status": "REJECTED",
+    "statusHistory": [
+      {
+        "id": "inq-008-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Manish Gupta",
+        "occurredAt": "2026-08-22T20:15:00"
+      },
+      {
+        "id": "inq-008-h2",
+        "from": "SUBMITTED",
+        "to": "CONTACTED",
+        "actor": "Suresh Nair",
+        "occurredAt": "2026-08-23T09:50:00"
+      },
+      {
+        "id": "inq-008-h3",
+        "from": "CONTACTED",
+        "to": "REJECTED",
+        "note": "Could not verify ID documents.",
+        "actor": "John Doe",
+        "occurredAt": "2026-08-25T18:00:00"
+      }
+    ],
+    "tenantId": null,
+    "createdAt": "2026-08-22",
+    "updatedAt": "2026-08-25"
+  },
+  {
+    "id": "inq-009",
+    "firstName": "Rahul",
+    "lastName": "Sharma",
+    "fullName": "Rahul Sharma",
+    "email": "student@stayops.com",
+    "phone": "9876543210",
+    "userId": "user-tenant",
+    "propertyId": "prop-lake",
+    "propertyName": "Lakeside Stay",
+    "roomId": "room-lake-108",
+    "roomNumber": "108",
+    "bedId": "bed-l108-b",
+    "bedNumber": "B",
+    "listingTitle": "108 - B",
+    "sharingType": "2_SHARING",
+    "monthlyRent": 12000,
+    "preferredMoveIn": "2026-10-01",
+    "message": "Checking availability if I transfer to Lakeside next month.",
+    "status": "SUBMITTED",
+    "statusHistory": [
+      {
+        "id": "inq-009-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Rahul Sharma",
+        "occurredAt": "2026-09-03T21:10:00"
+      }
+    ],
+    "tenantId": null,
+    "createdAt": "2026-09-03",
+    "updatedAt": "2026-09-03"
+  },
+  {
+    "id": "inq-010",
+    "firstName": "Sana",
+    "lastName": "Kapoor",
+    "fullName": "Sana Kapoor",
+    "email": "sana.kapoor@email.com",
+    "phone": "9876577800",
+    "userId": null,
+    "propertyId": "prop-sunrise",
+    "propertyName": "Sunrise PG",
+    "roomId": "room-sunrise-302",
+    "roomNumber": "302",
+    "bedId": "bed-302-c",
+    "bedNumber": "C",
+    "listingTitle": "302 - C",
+    "sharingType": "3_SHARING",
+    "monthlyRent": 6500,
+    "preferredMoveIn": "2026-09-14",
+    "message": "Might join if my college hostel waitlist does not clear.",
+    "status": "WITHDRAWN",
+    "statusHistory": [
+      {
+        "id": "inq-010-h1",
+        "from": null,
+        "to": "SUBMITTED",
+        "actor": "Sana Kapoor",
+        "occurredAt": "2026-08-18T07:45:00"
+      },
+      {
+        "id": "inq-010-h2",
+        "from": "SUBMITTED",
+        "to": "WITHDRAWN",
+        "note": "College hostel allotment confirmed.",
+        "actor": "Sana Kapoor",
+        "occurredAt": "2026-08-29T19:05:00"
+      }
+    ],
+    "tenantId": null,
+    "createdAt": "2026-08-18",
+    "updatedAt": "2026-08-29"
+  }
+]

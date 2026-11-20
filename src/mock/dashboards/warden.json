@@ -1,0 +1,118 @@
+{
+  "stats": [
+    {
+      "id": "tenants",
+      "label": "Total Tenants",
+      "value": "86",
+      "tone": "primary",
+      "hint": "Sunrise PG"
+    },
+    {
+      "id": "occupancy",
+      "label": "Occupancy",
+      "value": "86%",
+      "tone": "success",
+      "hint": "86 / 100 beds"
+    },
+    {
+      "id": "complaints",
+      "label": "Pending Complaints",
+      "value": "7",
+      "tone": "warning",
+      "hint": "2 high priority"
+    },
+    {
+      "id": "leaves",
+      "label": "Pending Leave Requests",
+      "value": "5",
+      "tone": "info",
+      "hint": "Awaiting approval"
+    },
+    {
+      "id": "visitors",
+      "label": "Expected Visitors",
+      "value": "9",
+      "tone": "primary",
+      "hint": "Today"
+    },
+    {
+      "id": "notices",
+      "label": "Recent Notices",
+      "value": "4",
+      "tone": "info",
+      "hint": "This week"
+    }
+  ],
+  "occupancy": {
+    "percent": 86,
+    "occupied": 86,
+    "vacant": 14,
+    "slices": [
+      { "name": "Occupied", "value": 86 },
+      { "name": "Vacant", "value": 14 }
+    ]
+  },
+  "expectedVisitors": [
+    {
+      "id": "v1",
+      "name": "Vikram Rao",
+      "tenant": "Rahul Sharma · 205-B",
+      "time": "5:30 PM",
+      "gate": "Main Gate"
+    },
+    {
+      "id": "v2",
+      "name": "Ananya Das",
+      "tenant": "Sneha Iyer · 204-B",
+      "time": "6:15 PM",
+      "gate": "Main Gate"
+    },
+    {
+      "id": "v3",
+      "name": "Parent visit",
+      "tenant": "Kabir Shah · 310-A",
+      "time": "7:00 PM",
+      "gate": "Main Gate"
+    }
+  ],
+  "recentNotices": [
+    {
+      "id": "wn1",
+      "title": "Water supply downtime on Sunday",
+      "date": "05 Sep 2026",
+      "isNew": true
+    },
+    {
+      "id": "wn2",
+      "title": "Night-out register reminder",
+      "date": "04 Sep 2026",
+      "isNew": true
+    },
+    {
+      "id": "wn3",
+      "title": "Housekeeping schedule",
+      "date": "02 Sep 2026",
+      "isNew": false
+    }
+  ],
+  "pendingLeaves": [
+    {
+      "id": "l1",
+      "title": "Weekend leave",
+      "detail": "Rahul Sharma · 06–07 Sep",
+      "time": "Pending"
+    },
+    {
+      "id": "l2",
+      "title": "Medical leave",
+      "detail": "Priya Nair · 05–08 Sep",
+      "time": "Pending"
+    },
+    {
+      "id": "l3",
+      "title": "Festival travel",
+      "detail": "Aarav Mehta · 09–12 Sep",
+      "time": "Pending"
+    }
+  ]
+}

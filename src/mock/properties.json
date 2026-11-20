@@ -1,0 +1,279 @@
+[
+  {
+    "id": "prop-sunrise",
+    "name": "Sunrise PG",
+    "type": "PG",
+    "address": "12 Sunrise Road, Satellite",
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "postalCode": "380015",
+    "contactNumber": "9876543210",
+    "email": "sunrise@stayops.com",
+    "status": "ACTIVE",
+    "description": "A well-managed PG near Satellite with study-friendly rooms, daily housekeeping, and 24x7 security.",
+    "amenities": ["Wi-Fi", "AC", "Laundry", "Study Table", "CCTV", "Housekeeping", "Hot Water"],
+    "monthlyRevenue": 186000,
+    "buildings": [
+      {
+        "id": "bldg-sunrise-a",
+        "name": "Building A",
+        "floors": [
+          { "id": "fl-sunrise-a-1", "name": "Floor 1", "roomCount": 20, "bedCount": 20, "occupiedBeds": 19 },
+          { "id": "fl-sunrise-a-2", "name": "Floor 2", "roomCount": 20, "bedCount": 20, "occupiedBeds": 17 },
+          { "id": "fl-sunrise-a-3", "name": "Floor 3", "roomCount": 20, "bedCount": 20, "occupiedBeds": 16 }
+        ]
+      },
+      {
+        "id": "bldg-sunrise-b",
+        "name": "Building B",
+        "floors": [
+          { "id": "fl-sunrise-b-1", "name": "Floor 1", "roomCount": 20, "bedCount": 20, "occupiedBeds": 18 },
+          { "id": "fl-sunrise-b-2", "name": "Floor 2", "roomCount": 20, "bedCount": 20, "occupiedBeds": 16 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "sa1", "title": "New tenant added", "detail": "Rahul Sharma assigned to Room 205-B", "time": "12 min ago" },
+      { "id": "sa2", "title": "Payment received", "detail": "₹8,000 collected from Room 112", "time": "34 min ago" },
+      { "id": "sa3", "title": "Complaint received", "detail": "Water leakage reported in 205-B", "time": "1 hr ago" },
+      { "id": "sa4", "title": "Room updated", "detail": "Building A Floor 2 marked for painting", "time": "3 hr ago" }
+    ]
+  },
+  {
+    "id": "prop-greenview",
+    "name": "GreenView Hostel",
+    "type": "HOSTEL",
+    "address": "88 Greenview Circle, Navrangpura",
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "postalCode": "380009",
+    "contactNumber": "9825011122",
+    "email": "greenview@stayops.com",
+    "status": "ACTIVE",
+    "description": "A hostel campus with shared rooms, mess facility, and a quiet study wing for working professionals.",
+    "amenities": ["Wi-Fi", "Laundry", "Parking", "CCTV", "Mess", "Power Backup"],
+    "monthlyRevenue": 142000,
+    "buildings": [
+      {
+        "id": "bldg-green-a",
+        "name": "North Block",
+        "floors": [
+          { "id": "fl-green-a-1", "name": "Floor 1", "roomCount": 15, "bedCount": 30, "occupiedBeds": 26 },
+          { "id": "fl-green-a-2", "name": "Floor 2", "roomCount": 15, "bedCount": 30, "occupiedBeds": 24 }
+        ]
+      },
+      {
+        "id": "bldg-green-b",
+        "name": "South Block",
+        "floors": [
+          { "id": "fl-green-b-1", "name": "Floor 1", "roomCount": 15, "bedCount": 30, "occupiedBeds": 22 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "ga1", "title": "New tenant added", "detail": "Sneha Iyer assigned to North Block 118", "time": "2 hr ago" },
+      { "id": "ga2", "title": "Payment received", "detail": "₹7,200 collected from Room 204", "time": "5 hr ago" }
+    ]
+  },
+  {
+    "id": "prop-oak",
+    "name": "Oak Street Residency",
+    "type": "PG",
+    "address": "45 Oak Street, Paldi",
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "postalCode": "380007",
+    "contactNumber": "9904412233",
+    "email": "oakstreet@stayops.com",
+    "status": "ACTIVE",
+    "description": "Compact PG with attached bathrooms and a small courtyard, popular with postgraduate students.",
+    "amenities": ["Wi-Fi", "AC", "Study Table", "CCTV", "Housekeeping", "Hot Water"],
+    "monthlyRevenue": 98000,
+    "buildings": [
+      {
+        "id": "bldg-oak-a",
+        "name": "Main Building",
+        "floors": [
+          { "id": "fl-oak-a-1", "name": "Floor 1", "roomCount": 14, "bedCount": 28, "occupiedBeds": 22 },
+          { "id": "fl-oak-a-2", "name": "Floor 2", "roomCount": 13, "bedCount": 26, "occupiedBeds": 20 },
+          { "id": "fl-oak-a-3", "name": "Floor 3", "roomCount": 13, "bedCount": 26, "occupiedBeds": 19 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "oa1", "title": "Room updated", "detail": "Floor 3 Room 310 marked available", "time": "Yesterday" },
+      { "id": "oa2", "title": "Complaint received", "detail": "Wi-Fi issue in Room 204", "time": "Yesterday" }
+    ]
+  },
+  {
+    "id": "prop-lake",
+    "name": "Lakeside Stay",
+    "type": "CO_LIVING",
+    "address": "9 Lakeview Lane, Vastrapur",
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "postalCode": "380054",
+    "contactNumber": "9879007788",
+    "email": "lakeside@stayops.com",
+    "status": "ACTIVE",
+    "description": "Premium co-living near the lake with private rooms, common lounge, and weekly community dinners.",
+    "amenities": ["Wi-Fi", "AC", "Laundry", "Parking", "CCTV", "Housekeeping", "Power Backup"],
+    "monthlyRevenue": 164000,
+    "buildings": [
+      {
+        "id": "bldg-lake-a",
+        "name": "Lakeside Wing",
+        "floors": [
+          { "id": "fl-lake-a-1", "name": "Floor 1", "roomCount": 12, "bedCount": 24, "occupiedBeds": 21 },
+          { "id": "fl-lake-a-2", "name": "Floor 2", "roomCount": 13, "bedCount": 26, "occupiedBeds": 21 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "la1", "title": "Payment received", "detail": "₹12,000 collected from Suite 8", "time": "6 hr ago" }
+    ]
+  },
+  {
+    "id": "prop-maple",
+    "name": "Maple House PG",
+    "type": "PG",
+    "address": "21 Maple Avenue, Bodakdev",
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "postalCode": "380054",
+    "contactNumber": "9724410099",
+    "email": "maple@stayops.com",
+    "status": "ACTIVE",
+    "description": "Newer PG with double occupancy rooms and a dedicated visitor lounge on the ground floor.",
+    "amenities": ["Wi-Fi", "AC", "Laundry", "Study Table", "Parking", "CCTV"],
+    "monthlyRevenue": 112000,
+    "buildings": [
+      {
+        "id": "bldg-maple-a",
+        "name": "House Block",
+        "floors": [
+          { "id": "fl-maple-a-1", "name": "Floor 1", "roomCount": 10, "bedCount": 20, "occupiedBeds": 16 },
+          { "id": "fl-maple-a-2", "name": "Floor 2", "roomCount": 10, "bedCount": 20, "occupiedBeds": 14 },
+          { "id": "fl-maple-a-3", "name": "Floor 3", "roomCount": 8, "bedCount": 16, "occupiedBeds": 11 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "ma1", "title": "New tenant added", "detail": "Priya Nair assigned to Floor 2", "time": "Yesterday" }
+    ]
+  },
+  {
+    "id": "prop-riverbank",
+    "name": "Riverbank Hostel",
+    "type": "HOSTEL",
+    "address": "4 Riverbank Road, Adajan",
+    "city": "Surat",
+    "state": "Gujarat",
+    "postalCode": "395009",
+    "contactNumber": "9099012345",
+    "email": "riverbank@stayops.com",
+    "status": "MAINTENANCE",
+    "description": "Hostel currently undergoing plumbing upgrades. New admissions are paused until next week.",
+    "amenities": ["Wi-Fi", "Laundry", "Mess", "CCTV", "Power Backup"],
+    "monthlyRevenue": 54000,
+    "buildings": [
+      {
+        "id": "bldg-river-a",
+        "name": "Block 1",
+        "floors": [
+          { "id": "fl-river-a-1", "name": "Floor 1", "roomCount": 12, "bedCount": 24, "occupiedBeds": 10 },
+          { "id": "fl-river-a-2", "name": "Floor 2", "roomCount": 12, "bedCount": 24, "occupiedBeds": 8 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "ra1", "title": "Room updated", "detail": "Block 1 Floor 1 closed for plumbing", "time": "2 days ago" }
+    ]
+  },
+  {
+    "id": "prop-horizon",
+    "name": "Horizon Co-living",
+    "type": "CO_LIVING",
+    "address": "310 Horizon Plaza, Baner",
+    "city": "Pune",
+    "state": "Maharashtra",
+    "postalCode": "411045",
+    "contactNumber": "8888011223",
+    "email": "horizon@stayops.com",
+    "status": "ACTIVE",
+    "description": "Urban co-living with studio-style rooms, coworking nook, and weekend community events.",
+    "amenities": ["Wi-Fi", "AC", "Laundry", "Parking", "CCTV", "Housekeeping", "Power Backup"],
+    "monthlyRevenue": 210000,
+    "buildings": [
+      {
+        "id": "bldg-horizon-a",
+        "name": "Tower A",
+        "floors": [
+          { "id": "fl-horizon-a-1", "name": "Floor 1", "roomCount": 16, "bedCount": 16, "occupiedBeds": 14 },
+          { "id": "fl-horizon-a-2", "name": "Floor 2", "roomCount": 16, "bedCount": 16, "occupiedBeds": 13 },
+          { "id": "fl-horizon-a-3", "name": "Floor 3", "roomCount": 16, "bedCount": 16, "occupiedBeds": 12 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "ha1", "title": "Payment received", "detail": "₹15,000 collected from Studio 12", "time": "40 min ago" },
+      { "id": "ha2", "title": "New tenant added", "detail": "Kabir Shah moved into Floor 2", "time": "Yesterday" }
+    ]
+  },
+  {
+    "id": "prop-cedar",
+    "name": "Cedar Nest PG",
+    "type": "PG",
+    "address": "17 Cedar Lane, Alkapuri",
+    "city": "Vadodara",
+    "state": "Gujarat",
+    "postalCode": "390007",
+    "contactNumber": "9825098877",
+    "email": "cedar@stayops.com",
+    "status": "INACTIVE",
+    "description": "Temporarily closed for ownership transfer. Existing tenants have been relocated to Sunrise PG.",
+    "amenities": ["Wi-Fi", "Laundry", "Study Table", "CCTV"],
+    "monthlyRevenue": 0,
+    "buildings": [
+      {
+        "id": "bldg-cedar-a",
+        "name": "Cedar Block",
+        "floors": [
+          { "id": "fl-cedar-a-1", "name": "Floor 1", "roomCount": 8, "bedCount": 16, "occupiedBeds": 0 },
+          { "id": "fl-cedar-a-2", "name": "Floor 2", "roomCount": 8, "bedCount": 16, "occupiedBeds": 0 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "ca1", "title": "Property deactivated", "detail": "Cedar Nest marked inactive pending transfer", "time": "1 week ago" }
+    ]
+  },
+  {
+    "id": "prop-palm",
+    "name": "Palm Court Hostel",
+    "type": "HOSTEL",
+    "address": "63 Palm Court, Maninagar",
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "postalCode": "380008",
+    "contactNumber": "9712912345",
+    "email": "palmcourt@stayops.com",
+    "status": "ACTIVE",
+    "description": "Budget hostel with triple sharing, evening mess, and a warden desk at the main gate.",
+    "amenities": ["Wi-Fi", "Laundry", "Mess", "CCTV", "Housekeeping"],
+    "monthlyRevenue": 76000,
+    "buildings": [
+      {
+        "id": "bldg-palm-a",
+        "name": "Court Block",
+        "floors": [
+          { "id": "fl-palm-a-1", "name": "Floor 1", "roomCount": 10, "bedCount": 30, "occupiedBeds": 27 },
+          { "id": "fl-palm-a-2", "name": "Floor 2", "roomCount": 10, "bedCount": 30, "occupiedBeds": 24 }
+        ]
+      }
+    ],
+    "recentActivity": [
+      { "id": "pa1", "title": "Complaint received", "detail": "Mess timing request from Floor 2", "time": "4 hr ago" }
+    ]
+  }
+]

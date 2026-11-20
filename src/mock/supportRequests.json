@@ -1,0 +1,56 @@
+{
+  "requests": [
+    {
+      "id": "sup-rahul-document",
+      "supportCode": "SUP-1001",
+      "tenantId": "user-tenant",
+      "tenantName": "Rahul Sharma",
+      "propertyId": "prop-sunrise",
+      "propertyName": "Sunrise PG",
+      "category": "DOCUMENT",
+      "subject": "Cannot download my rental agreement",
+      "description": "The agreement opens as a blank page on my phone. I need a copy for my college hostel form.",
+      "status": "IN_PROGRESS",
+      "assignedTo": "user-warden",
+      "assignedToName": "Suresh Nair",
+      "createdAt": "2026-09-04T11:20:00",
+      "updatedAt": "2026-09-05T09:15:00"
+    },
+    {
+      "id": "sup-sneha-payment",
+      "supportCode": "SUP-1002",
+      "tenantId": "tenant-sneha",
+      "tenantName": "Sneha Iyer",
+      "propertyId": "prop-greenview",
+      "propertyName": "GreenView Hostel",
+      "category": "PAYMENT",
+      "subject": "Need clarification on last invoice",
+      "description": "My August invoice shows a maintenance fee I did not expect. Can someone explain the line item?",
+      "status": "OPEN",
+      "assignedTo": null,
+      "assignedToName": null,
+      "createdAt": "2026-09-05T16:40:00",
+      "updatedAt": "2026-09-05T16:40:00"
+    }
+  ],
+  "comments": [
+    {
+      "id": "supc-1",
+      "requestId": "sup-rahul-document",
+      "authorId": "user-tenant",
+      "authorName": "Rahul Sharma",
+      "authorRole": "TENANT",
+      "message": "I tried both Chrome and the StayOps app view. Same blank page.",
+      "createdAt": "2026-09-04T11:22:00"
+    },
+    {
+      "id": "supc-2",
+      "requestId": "sup-rahul-document",
+      "authorId": "user-warden",
+      "authorName": "Suresh Nair",
+      "authorRole": "WARDEN",
+      "message": "We are re-attaching the demo agreement. You can also use View from My Documents.",
+      "createdAt": "2026-09-05T09:15:00"
+    }
+  ]
+}
