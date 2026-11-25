@@ -41,6 +41,7 @@ export function RoomGallery({ images, roomNumber }: RoomGalleryProps) {
           <button type="button" className="block w-full" onClick={() => setPreviewOpen(true)}>
             <img
               src={active.url}
+              srcSet={active.srcSet} sizes="(max-width: 640px) 100vw, 60vw" loading="lazy"
               alt={active.alt ?? active.label ?? `Room ${roomNumber}`}
               className="h-64 w-full object-cover sm:h-80"
             />
@@ -84,7 +85,7 @@ export function RoomGallery({ images, roomNumber }: RoomGalleryProps) {
               >
                 {image.url ? (
                   <img
-                    src={image.url}
+                    src={image.thumbnail ?? image.url} loading="lazy"
                     alt=""
                     className="h-full w-full object-cover"
                   />
@@ -101,7 +102,8 @@ export function RoomGallery({ images, roomNumber }: RoomGalleryProps) {
       <Modal open={previewOpen} title={active.label ?? `Room ${roomNumber}`} onClose={() => setPreviewOpen(false)}>
         {active.url ? (
           <img
-            src={active.url}
+            src={active.large ?? active.url}
+            loading="lazy"
             alt={active.alt ?? active.label ?? `Room ${roomNumber}`}
             className="max-h-[70vh] w-full rounded-xl object-contain"
           />

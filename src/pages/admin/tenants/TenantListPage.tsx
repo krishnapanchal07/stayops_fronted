@@ -22,7 +22,6 @@ import { useHasPermission } from '@/hooks/useHasPermission';
 import { useToast } from '@/hooks/useToast';
 import { PATHS, tenantDetailPath, wardenTenantDetailPath } from '@/routes/paths';
 import { propertyService } from '@/services/property/propertyService';
-import { roomService } from '@/services/room/roomService';
 import { tenantService } from '@/services/tenant/tenantService';
 import type { DataTableColumn } from '@/types/ui';
 import {
@@ -47,20 +46,20 @@ export function TenantListPage() {
   const isWarden = location.pathname.startsWith('/warden');
   const canCreate = useHasPermission(Permission.TENANT_CREATE);
   const canEdit = useHasPermission(Permission.TENANT_EDIT);
-  const canAssignRoom = useHasPermission(Permission.ROOM_ALLOCATE) || canEdit;
+  const canAssignRoom = useHasPermission(Permission.ROOM_ALLOCATE);
   const homeHref = isWarden ? PATHS.warden.dashboard : PATHS.admin.dashboard;
   const detailPath = isWarden ? wardenTenantDetailPath : tenantDetailPath;
-  const propertyIds = isWarden ? user?.propertyIds : undefined;
+  const propertyIds = user?.roleId === 'SUPER_ADMIN' ? undefined : user?.propertyIds;
 
   const tenantsLoader = useCallback(() => tenantService.getTenants(propertyIds), [propertyIds]);
   const propertiesLoader = useCallback(async () => {
     const properties = await propertyService.getProperties();
-    if (!propertyIds?.length) return properties;
+    if (!propertyIds) return properties;
     return properties.filter((property) => propertyIds.includes(property.id));
   }, [propertyIds]);
   const roomsLoader = useCallback(async () => {
-    const rooms = await roomService.getRooms();
-    if (!propertyIds?.length) return rooms;
+    const rooms = await tenantService.getAllocationRooms();
+    if (!propertyIds) return rooms;
     return rooms.filter((room) => propertyIds.includes(room.propertyId));
   }, [propertyIds]);
   const { data, status, error, reload } = useAsyncResource(tenantsLoader);
@@ -425,9 +424,11 @@ export function TenantListPage() {
       />
 
       <TenantCheckoutModal
+        key={checkoutTarget?.id ?? 'checkout-closed'}
         open={Boolean(checkoutTarget)}
         tenant={checkoutTarget}
         onClose={() => setCheckoutTarget(null)}
+        onComplete={() => { reload(); reloadRooms(); }}
       />
     </div>
   );

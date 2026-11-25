@@ -55,6 +55,7 @@ export interface InquiryStatusEvent {
 }
 
 export interface Inquiry {
+  kind?: 'ROOM' | 'tenant' | 'owner' | 'staff';
   id: string;
   firstName: string;
   lastName: string;
@@ -69,7 +70,7 @@ export interface Inquiry {
   bedId: string | null;
   bedNumber: string | null;
   listingTitle: string;
-  sharingType: SharingType;
+  sharingType: SharingType | null;
   monthlyRent: number;
   preferredMoveIn: string | null;
   message: string;

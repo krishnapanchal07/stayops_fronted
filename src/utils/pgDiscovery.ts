@@ -11,8 +11,8 @@ import type { Property } from '@/types/property';
 import { PropertyStatus, PropertyType } from '@/types/property';
 import { RoomType, SharingType } from '@/types/room';
 import { filterAvailableListings, emptyFindRoomFilters } from '@/utils/roomListing';
-import { getPropertyLocation } from '@/utils/propertyLocations';
-import { discoveryGenderPolicies } from '@/config/discoveryGenderPolicies';
+import { isValidCoordinate } from '@/utils/propertyLocations';
+import { imageUrl } from '@/services/property/propertyService';
 
 const compareId = (a: { id: string }, b: { id: string }) =>
   a.id.localeCompare(b.id, 'en', { numeric: true });
@@ -22,8 +22,8 @@ const startingRent = (beds: AvailableBedListing[]) =>
   beds.reduce((minimum, bed) => Math.min(minimum, bed.monthlyRent), Infinity);
 type PublicPropertyData = Pick<
   Property,
-  'id' | 'name' | 'address' | 'city' | 'state' | 'postalCode' | 'type' | 'description' | 'amenities'
-> & { genderPolicy?: DiscoveryGender };
+  'id' | 'name' | 'address' | 'city' | 'state' | 'postalCode' | 'type' | 'description' | 'amenities' | 'latitude' | 'longitude' | 'coverImage' | 'isDemo'
+> & { genderPolicy?: DiscoveryGender; location?: PublicPG['location']; image?: PublicPG['image'] };
 
 export function emptyDiscoveryFilters(): DiscoveryFilters {
   return {
@@ -88,18 +88,18 @@ function projectProperty(property: PublicPropertyData, listings: AvailableBedLis
     .find((candidate) => candidate.url);
   return {
     id: property.id,
-    genderPolicy: property.genderPolicy ?? discoveryGenderPolicies[property.id],
-    name: property.name,
+    genderPolicy: property.genderPolicy,
+    name: property.isDemo && !property.name.startsWith('DEMO') ? 'DEMO · ' + property.name : property.name,
     address: property.address,
     city: property.city,
     state: property.state,
     postalCode: property.postalCode,
     type: property.type,
     description: property.description,
-    location: getPropertyLocation(property.id),
+    location: property.location ?? (property.latitude != null && property.longitude != null && isValidCoordinate(property.latitude,property.longitude) ? {latitude:property.latitude,longitude:property.longitude,precision:'property',source:'database'} : null),
     propertyAmenities: property.amenities,
     amenities: unique([...property.amenities, ...listings.flatMap((listing) => listing.amenities)]),
-    image,
+    image: property.coverImage ? {id:property.coverImage.id,label:property.name,alt:property.name,url:imageUrl(property.coverImage.thumbnail),srcSet:`${imageUrl(property.coverImage.thumbnail)} ${property.coverImage.variants.thumbnail.width}w, ${imageUrl(property.coverImage.medium)} ${property.coverImage.variants.medium.width}w`,width:property.coverImage.width,height:property.coverImage.height,sortOrder:0,isPrimary:true,tone:'primary'} : property.image ?? image,
     startingRent: startingRent(listings),
     availableRoomCount: rooms.length,
     availableBedCount: listings.length,
@@ -123,8 +123,8 @@ export function aggregatePublicPGs(
     grouped.set(bed.propertyId, group);
   }
   return properties
-    .filter((property) => property.status === PropertyStatus.ACTIVE && grouped.has(property.id))
-    .map((property) => projectProperty(property, grouped.get(property.id)!))
+    .filter((property) => property.status === PropertyStatus.ACTIVE)
+    .map((property) => projectProperty(property, grouped.get(property.id) ?? []))
     .sort((a, b) => a.name.localeCompare(b.name) || compareId(a, b));
 }
 
@@ -148,7 +148,10 @@ export function filterPublicPGs(properties: PublicPG[], filters: DiscoveryFilter
         `${bed.title} ${bed.roomNumber} ${bed.amenities.join(' ')}`.toLowerCase().includes(query)
       );
     });
-    if (!beds.length) return [];
+    if (!beds.length) {
+      if (!pg.listings.length && (!query || propertyMatches) && !filters.roomType && !filters.sharingType && !filters.rentRange && (!filters.propertyId || filters.propertyId === pg.id) && filters.amenities.every(a=>pg.amenities.includes(a))) return [pg];
+      return [];
+    }
     if (beds.length === pg.listings.length) return [pg];
     // Re-project only changed groups; retain stable objects for unaffected cards/markers.
     return [projectProperty({ ...pg, amenities: pg.propertyAmenities }, beds)];

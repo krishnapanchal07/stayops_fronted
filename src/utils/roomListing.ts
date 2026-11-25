@@ -1,12 +1,7 @@
-import { BedStatus, RoomStatus, SHARING_TYPE_LABELS, type Room, type SharingType } from '@/types/room';
+import { BedStatus, RoomStatus, SHARING_TYPE_LABELS, type Room } from '@/types/room';
 import { RentRange, type AvailableBedListing, type FindRoomFilters } from '@/types/inquiry';
 
-export const DEFAULT_ROOM_POLICIES = [
-  'No Smoking',
-  'No Alcohol',
-  'Entry after 10:00 PM not allowed',
-  'Guest allowed (9 AM - 9 PM)',
-];
+export const DEFAULT_ROOM_POLICIES: string[] = []; // Property policies have not been configured.
 
 export const emptyFindRoomFilters = (): FindRoomFilters => ({
   query: '',
@@ -24,13 +19,6 @@ export function listingId(roomId: string, bedId: string): string {
   return `${roomId}:${bedId}`;
 }
 
-export function roomSizeSqFt(sharingType: SharingType): number {
-  if (sharingType === '1_SHARING') return 120;
-  if (sharingType === '2_SHARING') return 150;
-  if (sharingType === '3_SHARING') return 180;
-  return 220;
-}
-
 export function hasAmenity(amenities: string[], label: string): boolean {
   const needle = label.toLowerCase().replace(/[^a-z0-9]+/g, '');
   return amenities.some((item) => item.toLowerCase().replace(/[^a-z0-9]+/g, '').includes(needle));
@@ -39,10 +27,8 @@ export function hasAmenity(amenities: string[], label: string): boolean {
 export function roomSpecRows(room: Pick<Room, 'sharingType' | 'floorName' | 'amenities'>) {
   return [
     { label: 'Room Type', value: SHARING_TYPE_LABELS[room.sharingType] },
-    { label: 'Room Size', value: `${roomSizeSqFt(room.sharingType)} sq ft` },
     { label: 'Floor', value: room.floorName },
     { label: 'Bathroom', value: hasAmenity(room.amenities, 'Attached Bathroom') ? 'Attached' : 'Common' },
-    { label: 'Furnishing', value: room.amenities.length >= 3 ? 'Fully Furnished' : 'Semi Furnished' },
     { label: 'AC', value: hasAmenity(room.amenities, 'AC') ? 'Yes' : 'No' },
     { label: 'WiFi', value: hasAmenity(room.amenities, 'Wi') ? 'Yes' : 'No' },
     { label: 'Balcony', value: hasAmenity(room.amenities, 'Balcony') ? 'Yes' : 'No' },
@@ -79,7 +65,7 @@ export function toAvailableListings(rooms: Room[], featuredRoomIds: Set<string> 
         roomNumber: room.roomNumber,
         roomType: room.roomType,
         sharingType: room.sharingType,
-        monthlyRent: bed.rent || room.monthlyRent,
+        monthlyRent: bed.rent,
         securityDeposit: room.securityDeposit,
         amenities: room.amenities,
         description: room.description,

@@ -1,3 +1,5 @@
+import { inventoryService } from '@/services/room/inventoryService';
+import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { Checkbox } from '@/components/forms/Checkbox';
 import { Select } from '@/components/forms/Select';
 import { Textarea } from '@/components/forms/Textarea';
@@ -16,9 +18,9 @@ import {
   type Room,
   type RoomFormValues,
 } from '@/types/room';
-import { capacityFromSharing, rentForSharing } from '@/utils/roomStats';
+import { capacityFromSharing } from '@/utils/roomStats';
 import { emptyRoomForm, validateRoomForm, type RoomFormErrors } from '@/utils/roomValidation';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useRef, useState, type FormEvent } from 'react';
 
 interface RoomFormProps {
   mode: 'create' | 'edit';
@@ -59,16 +61,12 @@ export function RoomForm({
   const [values, setValues] = useState<RoomFormValues>(initialValues ?? emptyRoomForm());
   const [errors, setErrors] = useState<RoomFormErrors>({});
 
-  const selectedProperty = properties.find((property) => property.id === values.propertyId);
-  const selectedBuilding = selectedProperty?.buildings.find((building) => building.id === values.buildingId);
-  const buildingOptions = useMemo(
-    () => (selectedProperty?.buildings ?? []).map((building) => ({ value: building.id, label: building.name })),
-    [selectedProperty],
-  );
-  const floorOptions = useMemo(
-    () => (selectedBuilding?.floors ?? []).map((floor) => ({ value: floor.id, label: floor.name })),
-    [selectedBuilding],
-  );
+  const buildingLoader=useCallback(()=>values.propertyId?inventoryService.buildings(values.propertyId):Promise.resolve([]),[values.propertyId]);
+  const floorLoader=useCallback(()=>values.buildingId?inventoryService.floors(values.buildingId):Promise.resolve([]),[values.buildingId]);
+  const buildingState=useAsyncResource(buildingLoader); const floorState=useAsyncResource(floorLoader);
+  const buildingOptions=(buildingState.data??[]).filter(b=>b.propertyId===values.propertyId&&(b.status==='ACTIVE'||b.id===values.buildingId)).map(b=>({value:b.id,label:b.name}));
+  const floorOptions=(floorState.data??[]).filter(f=>f.buildingId===values.buildingId&&(f.status==='ACTIVE'||f.id===values.floorId)).map(f=>({value:f.id,label:f.name}));
+  const submitLock=useRef(false);
 
   const update = <K extends keyof RoomFormValues>(key: K, value: RoomFormValues[K]) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -76,14 +74,7 @@ export function RoomForm({
 
   const handleSharingChange = (sharingType: RoomFormValues['sharingType']) => {
     const capacity = capacityFromSharing(sharingType);
-    setValues((current) => {
-      const next = { ...current, sharingType, capacity };
-      if (mode === 'create' && current.monthlyRent === rentForSharing(current.sharingType)) {
-        next.monthlyRent = rentForSharing(sharingType);
-        next.securityDeposit = rentForSharing(sharingType);
-      }
-      return next;
-    });
+    setValues(current => ({...current,sharingType,capacity}));
   };
 
   const toggleAmenity = (amenity: string, checked: boolean) => {
@@ -97,29 +88,34 @@ export function RoomForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if(submitting || submitLock.current) return;
     const nextErrors = validateRoomForm(values, rooms, editingId);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       return;
     }
-    await onSubmit({
+    submitLock.current=true;
+    try { await onSubmit({
       ...values,
       roomNumber: values.roomNumber.trim(),
       description: values.description.trim(),
       capacity: capacityFromSharing(values.sharingType),
-    });
+    }); } finally { submitLock.current=false; }
   };
 
   return (
     <form className="flex max-h-[65vh] flex-col gap-4 overflow-y-auto pr-1" onSubmit={handleSubmit} noValidate>
+      {buildingState.status==='error'&&<p role="alert">{buildingState.error}<Button type="button" onClick={buildingState.reload}>Retry buildings</Button></p>}
+      {floorState.status==='error'&&<p role="alert">{floorState.error}<Button type="button" onClick={floorState.reload}>Retry floors</Button></p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Select
           label="Property"
           name="propertyId"
+          disabled={mode==='edit' || submitting}
           value={values.propertyId}
           options={[
             { value: '', label: 'Select property' },
-            ...properties.map((property) => ({ value: property.id, label: property.name })),
+            ...properties.filter(p=>p.status==='ACTIVE'||p.id===values.propertyId).map((property) => ({ value: property.id, label: property.name })),
           ]}
           onChange={(event) =>
             setValues((current) => ({
@@ -135,8 +131,9 @@ export function RoomForm({
         <Select
           label="Building"
           name="buildingId"
+          disabled={mode==='edit' || !values.propertyId || buildingState.status!=='success' || submitting}
           value={values.buildingId}
-          options={[{ value: '', label: 'Select building' }, ...buildingOptions]}
+          options={[{ value: '', label: buildingState.status==='loading'?'Loading buildings…':buildingOptions.length?'Select building':'No active buildings' }, ...buildingOptions]}
           onChange={(event) =>
             setValues((current) => ({ ...current, buildingId: event.target.value, floorId: '' }))
           }
@@ -149,8 +146,9 @@ export function RoomForm({
         <Select
           label="Floor"
           name="floorId"
+          disabled={mode==='edit' || !values.buildingId || floorState.status!=='success' || submitting}
           value={values.floorId}
-          options={[{ value: '', label: 'Select floor' }, ...floorOptions]}
+          options={[{ value: '', label: floorState.status==='loading'?'Loading floors…':floorOptions.length?'Select floor':'No active floors' }, ...floorOptions]}
           onChange={(event) => update('floorId', event.target.value)}
           error={errors.floorId}
           required

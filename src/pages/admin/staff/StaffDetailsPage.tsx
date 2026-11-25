@@ -10,10 +10,10 @@ import { Modal } from '@/components/ui/Modal';
 import { Permission } from '@/constants/permissions';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { useHasPermission } from '@/hooks/useHasPermission';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/useToast';
 import { PATHS } from '@/routes/paths';
 import { maintenanceService } from '@/services/maintenance/maintenanceService';
-import { propertyService } from '@/services/property/propertyService';
 import { staffService } from '@/services/staff/staffService';
 import { MAINTENANCE_STATUS_LABELS } from '@/types/maintenance';
 import {
@@ -34,8 +34,9 @@ export function StaffDetailsPage() {
   const { staffId = '' } = useParams();
   const toast = useToast();
   const canEdit = useHasPermission(Permission.STAFF_EDIT);
+  const user = useCurrentUser();
   const staffLoader = useCallback(() => staffService.getStaffById(staffId), [staffId]);
-  const propertiesLoader = useCallback(() => propertyService.getProperties(), []);
+  const propertiesLoader = useCallback(() => staffService.getAssignableProperties(), []);
   const { data: staff, status, error, reload } = useAsyncResource(staffLoader);
   const { data: properties } = useAsyncResource(propertiesLoader);
   const tasksLoader = useCallback(async () => {
@@ -46,9 +47,11 @@ export function StaffDetailsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [inviting, setInviting] = useState(false);
 
   const handleSave = async (values: StaffFormValues) => {
-    if (!staff) return;
+    if (!staff || saving) return;
     setSaving(true);
     try {
       await staffService.updateStaff(staff.id, values);
@@ -63,7 +66,8 @@ export function StaffDetailsPage() {
   };
 
   const toggleStatus = async () => {
-    if (!staff) return;
+    if (!staff || statusSaving) return;
+    setStatusSaving(true);
     try {
       if (staff.status === StaffStatus.INACTIVE) {
         await staffService.activateStaff(staff.id);
@@ -75,7 +79,7 @@ export function StaffDetailsPage() {
       reload();
     } catch (cause) {
       toast('error', cause instanceof Error ? cause.message : 'Unable to update staff status.');
-    }
+    } finally { setStatusSaving(false); }
   };
 
   return (
@@ -96,9 +100,16 @@ export function StaffDetailsPage() {
             actions={
               <div className="flex flex-wrap items-center gap-3">
                 <StatusPill value={STAFF_STATUS_LABELS[staff.status]} />
-                {canEdit ? (
+                {user?.roleId === 'SUPER_ADMIN' ? <Button variant="outline" disabled={inviting || (!staff.accountLinkPending && !staff.accountEnabled)} onClick={async () => {
+                  if (inviting) return;
+                  setInviting(true);
+                  try { const result = await staffService.resendInvitation(staff.id); toast('success', result.message); }
+                  catch (cause) { toast('error', cause instanceof Error ? cause.message : 'Unable to resend invitation.'); }
+                  finally { setInviting(false); }
+                }}>{inviting ? 'Sending…' : 'Resend invitation'}</Button> : null}
+                {canEdit && !staff.accountLinkPending ? (
                   <>
-                    <Button variant="outline" onClick={() => void toggleStatus()}>
+                    <Button variant="outline" disabled={statusSaving} onClick={() => void toggleStatus()}>
                       {staff.status === StaffStatus.INACTIVE ? 'Activate' : 'Deactivate'}
                     </Button>
                     <Button leftIcon={<Pencil className="h-4 w-4" />} onClick={() => setFormOpen(true)}>
@@ -111,6 +122,7 @@ export function StaffDetailsPage() {
             showBack
           />
 
+          {staff.accountLinkPending ? <p role="status" className="mb-4 rounded-xl bg-warning-soft p-4 text-sm">This existing account must accept the email invitation before the proposed property assignments take effect. Its current password and access are unchanged.</p> : null}
           <div className="grid gap-5 lg:grid-cols-3">
             <div className="space-y-5 lg:col-span-2">
               <Card>
@@ -166,7 +178,7 @@ export function StaffDetailsPage() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="typo-secondary">No maintenance tasks are currently assigned.</p>
+                    <p className="typo-secondary">Maintenance tasks are not connected to persistent staff profiles yet.</p>
                   )}
                 </Card>
               ) : null}
@@ -191,7 +203,7 @@ export function StaffDetailsPage() {
             </div>
           </div>
 
-          <Modal open={formOpen} title="Edit Staff" onClose={() => setFormOpen(false)} className="max-w-3xl">
+          <Modal open={formOpen} title="Edit Staff" onClose={() => { if (!saving) setFormOpen(false); }} className="max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain">
             <StaffForm
               key={staff.id}
               mode="edit"

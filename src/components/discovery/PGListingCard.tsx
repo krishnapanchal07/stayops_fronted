@@ -40,10 +40,10 @@ export const PGListingCard = memo(function PGListingCard({
         <div className="min-w-0 flex-1 p-5">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1 text-[10px] font-medium text-green-700">
-              <Check size={12} /> Beds available
+              <Check size={12} /> {pg.availableBedCount ? 'Beds available' : 'No available rooms yet'}
             </span>
             <span className="text-[10px] text-text-secondary">
-              {pg.location ? 'Approximate map location' : 'Map location unavailable'}
+              {pg.location ? 'Saved map location' : 'Map location unavailable'}
             </span>
           </div>
           <h2 className="text-xl font-bold tracking-tight">
@@ -77,12 +77,12 @@ export const PGListingCard = memo(function PGListingCard({
           </div>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-t border-border pt-3">
             <div>
-              <span className="text-[10px] text-text-secondary">Starting from</span>
+              <span className="text-[10px] text-text-secondary">{Number.isFinite(pg.startingRent) ? 'Starting from' : 'Availability'}</span>
               <p>
                 <strong className="text-xl font-bold text-primary">
-                  {formatINR(pg.startingRent)}
+                  {(Number.isFinite(pg.startingRent) ? formatINR(pg.startingRent) : 'Rooms coming soon')}
                 </strong>
-                <span className="text-[10px] text-text-secondary"> / bed / month</span>
+                {Number.isFinite(pg.startingRent) && <span className="text-[10px] text-text-secondary"> / bed / month</span>}
               </p>
             </div>
             <Link

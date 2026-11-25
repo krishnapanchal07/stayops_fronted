@@ -16,11 +16,14 @@ export const authRoutes: RouteObject[] = [
         children: [
           { path: PATHS.login, element: <LoginPage /> },
           { path: PATHS.forgotPassword, element: <ForgotPasswordPage /> },
-          { path: PATHS.resetPassword, element: <ResetPasswordPage /> },
           { path: PATHS.register, element: <RegisterPage /> },
           { path: '/auth', element: <Navigate to={PATHS.login} replace /> },
         ],
       },
     ],
+  },
+  {
+    element: <AuthLayout />,
+    children: [{ path: PATHS.resetPassword, element: <ResetPasswordPage /> }],
   },
 ];

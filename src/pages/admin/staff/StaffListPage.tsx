@@ -16,9 +16,10 @@ import { Modal } from '@/components/ui/Modal';
 import { Permission } from '@/constants/permissions';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { useHasPermission } from '@/hooks/useHasPermission';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useToast } from '@/hooks/useToast';
 import { PATHS, staffDetailPath } from '@/routes/paths';
-import { propertyService } from '@/services/property/propertyService';
 import { staffService } from '@/services/staff/staffService';
 import type { Staff, StaffFilters, StaffFormValues } from '@/types/staff';
 import {
@@ -31,30 +32,40 @@ import {
 } from '@/types/staff';
 import type { DataTableColumn } from '@/types/ui';
 import { formatPhone } from '@/utils/format';
-import { emptyStaffFilters, filterStaff, summarizeStaff, toStaffFormValues } from '@/utils/staffValidation';
+import { emptyStaffFilters, toStaffFormValues } from '@/utils/staffValidation';
 import { MoreHorizontal, Plus } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function StaffListPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const canCreate = useHasPermission(Permission.STAFF_CREATE);
+  const user = useCurrentUser();
+  const canCreate = useHasPermission(Permission.STAFF_CREATE) && user?.roleId === 'SUPER_ADMIN';
   const canEdit = useHasPermission(Permission.STAFF_EDIT);
-  const staffLoader = useCallback(() => staffService.getStaff(), []);
-  const propertiesLoader = useCallback(() => propertyService.getProperties(), []);
-  const { data, status, error, reload } = useAsyncResource(staffLoader);
-  const { data: properties } = useAsyncResource(propertiesLoader);
-
-  const [filters, setFilters] = useState<StaffFilters>(emptyStaffFilters);
+  const [filters, setFilterValues] = useState<StaffFilters>(emptyStaffFilters);
+  const [page, setPage] = useState(1);
+  const [sorting, setSorting] = useState<{ id: string; direction: 'asc' | 'desc' }>({ id: 'createdAt', direction: 'desc' });
+  const query = useDebouncedValue(filters.query);
+  const setFilters = (next: SetStateAction<StaffFilters>) => { setFilterValues(next); setPage(1); };
+  const staffLoader = useCallback(() => staffService.getStaffPage({ role: filters.role, department: filters.department, propertyId: filters.propertyId, status: filters.status, query }, {
+    offset: (page - 1) * 10, limit: 10,
+    sortBy: ({ employee: 'fullName', code: 'employeeCode' } as Record<string, string>)[sorting.id] ?? sorting.id,
+    sortDirection: sorting.direction,
+  }), [filters.role, filters.department, filters.propertyId, filters.status, query, page, sorting]);
+  const propertiesLoader = useCallback(() => staffService.getAssignableProperties(), []);
+  const summaryLoader = useCallback(() => staffService.getStaffSummary(), []);
+  const { data, status, error, reload: reloadStaff } = useAsyncResource(staffLoader);
+  const { data: properties, status: propertiesStatus, error: propertiesError, reload: reloadProperties } = useAsyncResource(propertiesLoader);
+  const { data: summaryData, status: summaryStatus, error: summaryError, reload: reloadSummary } = useAsyncResource(summaryLoader);
+  const reload = () => { reloadStaff(); reloadSummary(); };
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<Staff | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const staff = useMemo(() => data ?? [], [data]);
-  const filtered = useMemo(() => filterStaff(staff, filters), [filters, staff]);
-  const summary = useMemo(() => summarizeStaff(staff), [staff]);
+  const [statusSaving, setStatusSaving] = useState<string | null>(null);
+  const staff = useMemo(() => data?.items ?? [], [data]);
+  const summary = summaryData ?? { total: 0, active: 0, inactive: 0, onLeave: 0 };
   const filtersActive = Object.values(filters).some(Boolean);
 
   const openCreate = () => {
@@ -70,6 +81,7 @@ export function StaffListPage() {
   };
 
   const handleSave = async (values: StaffFormValues) => {
+    if (saving) return;
     setSaving(true);
     try {
       if (formMode === 'edit' && editing) {
@@ -77,7 +89,7 @@ export function StaffListPage() {
         toast('success', 'Staff updated successfully.');
       } else {
         await staffService.createStaff(values);
-        toast('success', 'Staff added successfully.');
+        toast('success', 'Staff added successfully.', 'A secure account invitation was sent to the staff email.');
       }
       setFormOpen(false);
       setEditing(null);
@@ -90,6 +102,8 @@ export function StaffListPage() {
   };
 
   const toggleStatus = async (record: Staff) => {
+    if (statusSaving) return;
+    setStatusSaving(record.id);
     try {
       if (record.status === StaffStatus.INACTIVE) {
         await staffService.activateStaff(record.id);
@@ -101,7 +115,7 @@ export function StaffListPage() {
       reload();
     } catch (cause) {
       toast('error', cause instanceof Error ? cause.message : 'Unable to update staff status.');
-    }
+    } finally { setStatusSaving(null); }
   };
 
   const columns: DataTableColumn<Staff>[] = [
@@ -136,7 +150,7 @@ export function StaffListPage() {
       id: 'property',
       header: 'Property',
       accessor: 'fullName',
-      render: (row) => row.propertyNames.join(', ') || '—',
+      render: (row) => (row.accountLinkPending ? 'Pending confirmation: ' : '') + (row.propertyNames.join(', ') || '—'),
     },
     {
       id: 'phone',
@@ -163,7 +177,7 @@ export function StaffListPage() {
           }
           items={[
             { id: 'view', label: 'View', onSelect: () => navigate(staffDetailPath(row.id)) },
-            ...(canEdit
+            ...(canEdit && !row.accountLinkPending && !statusSaving
               ? [
                   { id: 'edit', label: 'Edit', onSelect: () => openEdit(row) },
                   {
@@ -194,16 +208,18 @@ export function StaffListPage() {
         }
       />
 
+      {propertiesStatus === 'error' ? <ErrorState description={propertiesError ?? 'Unable to load assignable properties.'} onRetry={reloadProperties} /> : null}
+      {summaryStatus === 'error' ? <ErrorState description={summaryError ?? 'Unable to load staff summary.'} onRetry={reloadSummary} /> : null}
       {status === 'loading' ? <DashboardSkeleton /> : null}
       {status === 'error' ? <ErrorState description={error ?? 'Unable to load staff.'} onRetry={reload} /> : null}
 
       {status === 'success' ? (
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard metric={{ id: 'total', label: 'Total Staff', value: String(summary.total), tone: 'primary' }} />
-            <StatCard metric={{ id: 'active', label: 'Active', value: String(summary.active), tone: 'success' }} />
-            <StatCard metric={{ id: 'leave', label: 'On Leave', value: String(summary.onLeave), tone: 'warning' }} />
-            <StatCard metric={{ id: 'inactive', label: 'Inactive', value: String(summary.inactive), tone: 'danger' }} />
+            <StatCard metric={{ id: 'total', label: 'Total Staff', value: summaryData ? String(summary.total) : '—', tone: 'primary' }} />
+            <StatCard metric={{ id: 'active', label: 'Active', value: summaryData ? String(summary.active) : '—', tone: 'success' }} />
+            <StatCard metric={{ id: 'leave', label: 'On Leave', value: summaryData ? String(summary.onLeave) : '—', tone: 'warning' }} />
+            <StatCard metric={{ id: 'inactive', label: 'Inactive', value: summaryData ? String(summary.inactive) : '—', tone: 'danger' }} />
           </div>
 
           <Card>
@@ -275,7 +291,9 @@ export function StaffListPage() {
           ) : (
             <DataTable
               columns={columns}
-              data={filtered}
+              data={staff}
+              serverPagination={{ page, pageSize: 10, total: data?.total ?? 0, onPageChange: setPage }}
+              serverSorting={{ ...sorting, onSort: (id, direction) => { setSorting({ id, direction }); setPage(1); } }}
               rowKey={(row) => row.id}
               searchable={false}
               pageSize={10}
@@ -306,8 +324,8 @@ export function StaffListPage() {
       <Modal
         open={formOpen}
         title={formMode === 'create' ? 'Add Staff' : 'Edit Staff'}
-        onClose={() => setFormOpen(false)}
-        className="max-w-3xl"
+        onClose={() => { if (!saving) setFormOpen(false); }}
+        className="max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
       >
         <StaffForm
           key={editing?.id ?? 'create'}

@@ -18,12 +18,10 @@ import { useToast } from '@/hooks/useToast';
 import { inquiryDetailPath, PATHS, wardenInquiryDetailPath } from '@/routes/paths';
 import { inquiryService } from '@/services/inquiry/inquiryService';
 import { propertyService } from '@/services/property/propertyService';
-import { roomService } from '@/services/room/roomService';
 import { INQUIRY_STATUS_LABELS, InquiryStatus, type Inquiry, type InquiryFilters } from '@/types/inquiry';
 import type { DataTableColumn } from '@/types/ui';
 import { formatINR, formatPhone, formatShortDate } from '@/utils/format';
 import { allowedInquiryTransitions, emptyInquiryFilters, filterInquiries, summarizeInquiries } from '@/utils/inquiryStats';
-import { BedStatus } from '@/types/room';
 import { MoreHorizontal } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -62,13 +60,13 @@ export function InquiryListPage() {
   const summary = useMemo(() => summarizeInquiries(inquiries), [inquiries]);
 
   const openConvert = async (inquiry: Inquiry) => {
-    if (inquiry.bedId) {
-      const bed = await roomService.findBed(inquiry.roomId, inquiry.bedId);
-      setBedAvailable(bed?.status === BedStatus.AVAILABLE);
-    } else {
-      setBedAvailable(false);
+    try {
+      const availability = inquiry.bedId ? await inquiryService.getInventoryAvailability() : null;
+      setBedAvailable(Boolean(inquiry.bedId && availability?.[inquiry.roomId]?.[inquiry.bedId]));
+      setConvertTarget(inquiry);
+    } catch (cause) {
+      toast('error', cause instanceof Error ? cause.message : 'Unable to check bed availability.');
     }
-    setConvertTarget(inquiry);
   };
 
   const columns: DataTableColumn<Inquiry>[] = [
@@ -129,7 +127,7 @@ export function InquiryListPage() {
             ...(canManage && allowedInquiryTransitions(row.status).length > 0
               ? [{ id: 'status', label: 'Change Status', onSelect: () => setStatusTarget(row) }]
               : []),
-            ...(canConvert && row.status === InquiryStatus.APPROVED
+            ...(canConvert && row.kind === 'ROOM' && row.status === InquiryStatus.APPROVED
               ? [{ id: 'convert', label: 'Convert to Tenant', onSelect: () => void openConvert(row) }]
               : []),
           ]}
@@ -141,7 +139,7 @@ export function InquiryListPage() {
   return (
     <div>
       <PageHeader
-        title="Room Inquiries"
+        title="Inquiries"
         description="Review visitor and student inquiries before they become tenants."
         breadcrumbs={[{ label: 'Home', href: homeHref }, { label: 'Inquiries' }]}
       />

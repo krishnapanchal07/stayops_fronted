@@ -17,6 +17,10 @@ export function DiscoveryImage({
       {image?.url && image.url !== failedUrl ? (
         <img
           src={image.url}
+          srcSet={image.srcSet}
+          sizes="(max-width: 640px) 100vw, 400px"
+          width={image.width}
+          height={image.height}
           alt={image.alt || name}
           className="absolute inset-0 h-full w-full object-cover"
           loading="lazy"

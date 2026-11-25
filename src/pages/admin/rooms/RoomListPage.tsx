@@ -36,10 +36,10 @@ import {
   type RoomListItem,
 } from '@/types/room';
 import { formatINR } from '@/utils/format';
-import { filterRooms, summarizeRooms } from '@/utils/roomStats';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { emptyRoomFilters, toRoomFormValues } from '@/utils/roomValidation';
 import { MoreHorizontal, Plus } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type SetStateAction } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export function RoomListPage() {
@@ -54,11 +54,16 @@ export function RoomListPage() {
   const detailPath = isWarden ? wardenRoomDetailPath : roomDetailPath;
   const allowedPropertyIds = isWarden ? user?.propertyIds : undefined;
 
-  const roomsLoader = useCallback(async () => {
-    const rooms = await roomService.getRooms();
-    if (!isWarden) return rooms;
-    return rooms.filter((room) => (allowedPropertyIds ?? []).includes(room.propertyId));
-  }, [allowedPropertyIds, isWarden]);
+  const [filters, storeFilters] = useState<RoomFilters>(emptyRoomFilters);
+  const [page,setPage]=useState(1);
+  const [sort,setSort]=useState({id:'roomNumber',direction:'asc' as 'asc'|'desc'});
+  const setFilters=(next:SetStateAction<RoomFilters>)=>{storeFilters(next);setPage(1);};
+  const query=useDebouncedValue(filters.query);
+  const params=new URLSearchParams({...filters,query,offset:String((page-1)*10),limit:'10',sortBy:sort.id,sortDirection:sort.direction}).toString();
+  const roomsLoader=useCallback(async()=>{
+    const [result,summary]=await Promise.all([roomService.getPage(new URLSearchParams(params)),roomService.getRoomSummary()]);
+    return {...result,summary};
+  },[params]);
   const propertiesLoader = useCallback(async () => {
     const properties = await propertyService.getProperties();
     if (!isWarden) return properties;
@@ -67,7 +72,6 @@ export function RoomListPage() {
   const { data, status, error, reload } = useAsyncResource(roomsLoader);
   const { data: properties } = useAsyncResource(propertiesLoader);
 
-  const [filters, setFilters] = useState<RoomFilters>(emptyRoomFilters);
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<RoomListItem | null>(null);
@@ -75,10 +79,10 @@ export function RoomListPage() {
   const [statusTarget, setStatusTarget] = useState<RoomListItem | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
 
-  const rooms = useMemo(() => data ?? [], [data]);
+  const rooms = useMemo(() => data?.items ?? [], [data]);
   const propertyOptions = properties ?? [];
-  const filtered = useMemo(() => filterRooms(rooms, filters), [filters, rooms]);
-  const summary = useMemo(() => summarizeRooms(rooms), [rooms]);
+  const filtered = rooms;
+  const summary = data?.summary ?? {totalRooms:0,availableRooms:0,fullRooms:0,maintenanceRooms:0,occupiedBeds:0,totalBeds:0};
   const selectedProperty = propertyOptions.find((property) => property.id === filters.propertyId);
   const selectedBuilding = selectedProperty?.buildings.find((building) => building.id === filters.buildingId);
   const filtersActive = Object.values(filters).some(Boolean);
@@ -89,10 +93,9 @@ export function RoomListPage() {
     setFormOpen(true);
   };
 
-  const openEdit = (room: RoomListItem) => {
-    setFormMode('edit');
-    setEditing(room);
-    setFormOpen(true);
+  const openEdit = async (room: RoomListItem) => {
+    try { const full=await roomService.getRoomById(room.id); setFormMode('edit');setEditing(full);setFormOpen(true); }
+    catch(cause) {toast('error',cause instanceof Error?cause.message:'Unable to load room.');}
   };
 
   const handleSave = async (values: RoomFormValues) => {
@@ -164,14 +167,14 @@ export function RoomListPage() {
       id: 'beds',
       header: 'Beds',
       accessor: 'occupiedBeds',
-      sortable: true,
+      sortable: false,
       render: (row) => `${row.occupiedBeds} / ${row.capacity}`,
     },
     {
       id: 'occupancy',
       header: 'Occupancy',
       accessor: 'occupancyPercent',
-      sortable: true,
+      sortable: false,
       render: (row) => (
         <div className="min-w-28">
           <OccupancyIndicator
@@ -396,6 +399,8 @@ export function RoomListPage() {
               rowKey={(row) => row.id}
               searchable={false}
               pageSize={10}
+              serverPagination={{page,pageSize:10,total:data?.total??0,onPageChange:setPage}}
+              serverSorting={{...sort,onSort:(id,direction)=>{setSort({id,direction});setPage(1);}}}
               emptyTitle="No rooms found."
               emptyDescription="Try adjusting your filters or create a new room."
               renderMobile={(row) => (

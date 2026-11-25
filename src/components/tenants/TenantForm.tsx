@@ -42,7 +42,7 @@ const statusOptions = Object.values(TenantStatus).map((value) => ({
   label: TENANT_STATUS_LABELS[value],
 }));
 
-const sourceOptions = Object.values(TenantSource).map((value) => ({
+const sourceOptions = Object.values(TenantSource).filter((value) => value !== TenantSource.INQUIRY).map((value) => ({
   value,
   label: TENANT_SOURCE_LABELS[value],
 }));
@@ -103,6 +103,7 @@ export function TenantForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submitting) return;
     const nextErrors = validateTenantForm(values, tenants, editingId);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -147,6 +148,7 @@ export function TenantForm({
         <TextInput
           label="Email"
           name="email"
+          readOnly={mode === 'edit'}
           type="email"
           value={values.email}
           onChange={(event) => update('email', event.target.value)}
@@ -358,6 +360,8 @@ export function TenantForm({
           <TextInput
             label="Monthly Rent"
             name="roomRent"
+            readOnly
+            helperText="Quoted from the server catalog when allocating a bed."
             type="number"
             min={0}
             value={String(values.roomRent || '')}
@@ -380,8 +384,9 @@ export function TenantForm({
         label="Source"
         name="source"
         value={values.source}
-        options={sourceOptions}
-        helperText="Use Convert to Tenant from Inquiries to keep the real inquiry ID. Manual inquiry source is still allowed."
+        options={values.source === TenantSource.INQUIRY ? [{ value: TenantSource.INQUIRY, label: 'Inquiry' }] : sourceOptions}
+        disabled={mode === 'edit'}
+        helperText="Use Convert to Tenant from Inquiries to keep the real inquiry ID. Inquiry source is set only by conversion."
         onChange={(event) => update('source', event.target.value as TenantFormValues['source'])}
       />
 

@@ -24,6 +24,10 @@ export function emptyPropertyForm(): PropertyFormValues {
 
 export function toPropertyFormValues(values: PropertyFormValues): PropertyFormValues {
   return {
+    ownerUserId: values.ownerUserId ?? null,
+    latitude: values.latitude ?? null, longitude: values.longitude ?? null,
+    isPublic: values.isPublic ?? false, isDemo: values.isDemo ?? false,
+    locality: values.locality ?? "", country: values.country ?? "India",
     name: values.name,
     type: values.type,
     address: values.address,
@@ -90,6 +94,9 @@ export function validatePropertyForm(values: PropertyFormValues): PropertyFormEr
     errors.description = 'Keep the description under 500 characters.';
   }
 
+  if ((values.latitude == null) !== (values.longitude == null)) errors.latitude = 'Provide both coordinates or leave both blank.';
+  if (values.latitude != null && (!Number.isFinite(values.latitude) || Math.abs(values.latitude) > 85.05112878)) errors.latitude = 'Latitude must be between -85.05112878 and 85.05112878.';
+  if (values.longitude != null && (!Number.isFinite(values.longitude) || Math.abs(values.longitude) > 180)) errors.longitude = 'Longitude must be between -180 and 180.';
   return errors;
 }
 

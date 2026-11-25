@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export type UpdateDiscoveryFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => void;
 interface Props {
+  options?: {cities:string[];localities:string[]};
   filters: Filters;
   properties: PublicPG[];
   onChange: UpdateDiscoveryFilter;
@@ -20,6 +21,7 @@ interface Props {
 }
 export function DiscoveryFilters({
   filters,
+  options: suppliedOptions,
   properties,
   onChange,
   onClear,
@@ -58,14 +60,16 @@ export function DiscoveryFilters({
     };
   }, [open]);
   const close = useCallback(() => setOpen(false), []);
-  const localities = useMemo(
+  const pageLocalities = useMemo(
     () =>
       [
         ...new Set(properties.map((pg) => pg.address.split(',').at(-1)?.trim()).filter(Boolean)),
       ].sort(),
     [properties],
   );
-  const cities = useMemo(() => [...new Set(properties.map((pg) => pg.city))].sort(), [properties]);
+  const pageCities = useMemo(() => [...new Set(properties.map((pg) => pg.city))].sort(), [properties]);
+  const localities=suppliedOptions?.localities??pageLocalities;
+  const cities=suppliedOptions?.cities??pageCities;
   const amenities = useMemo(
     () => [...new Set(properties.flatMap((pg) => pg.amenities))].sort(),
     [properties],

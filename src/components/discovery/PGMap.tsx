@@ -64,7 +64,7 @@ export default memo(function PGMap({
           doubleClickZoom
           zoomControl={false}
           className="h-full w-full"
-          aria-label="Available properties map. Demo locations are approximate."
+          aria-label="Available properties map."
         >
           <TileLayer
             ref={tiles}
@@ -133,8 +133,8 @@ export default memo(function PGMap({
       <div className="flex items-start gap-2 border-t border-border bg-surface p-3 text-[10px] leading-5 text-text-secondary">
         <Info size={14} className="mt-0.5 shrink-0" />
         <p>
-          Demo pins show approximate localities, not verified buildings. Prices are per bed per
-          month. The map shows all filtered properties, across listing pages.
+          Pins use saved property coordinates. Prices are per bed per
+          month. The map shows properties on the current results page.
         </p>
       </div>
     </div>

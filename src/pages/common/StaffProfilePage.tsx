@@ -14,6 +14,7 @@ import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/useToast';
 import { getHomePath } from '@/routes/paths';
+import { staffService } from '@/services/staff/staffService';
 import { profileService } from '@/services/profile/profileService';
 import { propertyService } from '@/services/property/propertyService';
 import { sessionApplied } from '@/store/slices/authSlice';
@@ -35,6 +36,13 @@ export function StaffProfilePage() {
 
   const loader = useCallback(async () => {
     if (!userId) throw new Error('Profile information unavailable.');
+    const token = new URLSearchParams(window.location.hash.slice(1)).get('staff-link');
+    if (token) {
+      await staffService.acceptInvitation(token);
+      window.history.replaceState(null, '', window.location.pathname);
+      window.location.assign('/login');
+      return { preferences: await profileService.getNotificationPreferences(userId), assignedNames: [] };
+    }
     const [preferences, properties] = await Promise.all([
       profileService.getNotificationPreferences(userId),
       propertyService.getProperties(),

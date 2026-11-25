@@ -4,7 +4,7 @@ import { Select } from '@/components/forms/Select';
 import { TextInput } from '@/components/forms/TextInput';
 import { TenantProfileImageField } from '@/components/tenants/TenantProfileImageField';
 import { Button } from '@/components/ui/Button';
-import type { PropertyListItem } from '@/types/property';
+import { staffService } from '@/services/staff/staffService';
 import {
   STAFF_DEPARTMENT_BY_ROLE,
   STAFF_DEPARTMENT_LABELS,
@@ -20,7 +20,7 @@ import { useState, type FormEvent } from 'react';
 
 interface StaffFormProps {
   mode: 'create' | 'edit';
-  properties: PropertyListItem[];
+  properties: { id: string; name: string }[];
   initialValues?: StaffFormValues;
   submitting?: boolean;
   linkedAccount?: boolean;
@@ -39,6 +39,9 @@ export function StaffForm({
 }: StaffFormProps) {
   const [values, setValues] = useState<StaffFormValues>(initialValues ?? emptyStaffForm());
   const [errors, setErrors] = useState<StaffFormErrors>({});
+  const [lookupError, setLookupError] = useState('');
+  const [lookingUp, setLookingUp] = useState(false);
+  const identityLocked = linkedAccount || Boolean(values.existingUserId);
 
   const patch = (partial: Partial<StaffFormValues>) => {
     setValues((current) => ({ ...current, ...partial }));
@@ -46,7 +49,8 @@ export function StaffForm({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const nextErrors = validateStaffForm(values);
+    if (submitting || lookingUp) return;
+    const nextErrors = validateStaffForm(values, identityLocked);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     await onSubmit(values);
@@ -59,10 +63,30 @@ export function StaffForm({
         value={values.profileImage}
         onChange={(profileImage) => patch({ profileImage })}
       />
+      {mode === 'create' ? <div className="space-y-2">
+        <p className="typo-helper">A new login account receives a secure password setup email. For an existing account, explicitly request a profile link; the account holder must confirm it by email.</p>
+        <Button type="button" variant="outline" disabled={submitting || lookingUp || !values.email.trim()} onClick={async () => {
+          if (values.existingUserId) { patch({ existingUserId: undefined }); return; }
+          setLookingUp(true);
+          setLookupError('');
+          try {
+            const account = await staffService.findExistingAccount(values.email);
+            const [firstName, ...last] = account.name.split(' ');
+            patch({ existingUserId: account.id, firstName, lastName: last.join(' '), email: account.email,
+              role: account.role, department: STAFF_DEPARTMENT_BY_ROLE[account.role] });
+          } catch (cause) { setLookupError(cause instanceof Error ? cause.message : 'Unable to check account.'); }
+          finally { setLookingUp(false); }
+        }}>{lookingUp ? 'Checking…' : values.existingUserId ? 'Use a new account instead' : 'Select an existing login account'}</Button>
+        {values.existingUserId ? <p role="status" className="typo-helper">Existing account selected. Submitting requests mailbox confirmation and preserves its password and current access.</p> : null}
+        {lookupError ? <p role="alert" className="text-sm text-danger">{lookupError}</p> : null}
+      </div> : null}
+      <fieldset disabled={submitting || lookingUp} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <TextInput
           label="First name"
           name="firstName"
+          readOnly={Boolean(values.existingUserId)}
+          maxLength={120}
           required
           value={values.firstName}
           error={errors.firstName}
@@ -71,7 +95,9 @@ export function StaffForm({
         <TextInput
           label="Last name"
           name="lastName"
-          required
+          readOnly={Boolean(values.existingUserId)}
+          maxLength={119}
+          required={!identityLocked}
           value={values.lastName}
           error={errors.lastName}
           onChange={(event) => patch({ lastName: event.target.value })}
@@ -79,13 +105,14 @@ export function StaffForm({
         <TextInput
           label="Email"
           name="email"
+          maxLength={320}
           type="email"
           required
-          readOnly={linkedAccount}
+          readOnly={identityLocked}
           value={values.email}
           error={errors.email}
           helperText={linkedAccount ? 'Email is tied to the existing login account.' : undefined}
-          onChange={(event) => patch({ email: event.target.value })}
+          onChange={(event) => { patch({ email: event.target.value }); setLookupError(''); }}
         />
         <TextInput
           label="Phone"
@@ -99,7 +126,7 @@ export function StaffForm({
           label="Role"
           name="role"
           required
-          disabled={linkedAccount}
+          disabled={identityLocked}
           value={values.role}
           error={errors.role}
           helperText={linkedAccount ? 'Role stays aligned with the existing login account.' : undefined}
@@ -130,6 +157,7 @@ export function StaffForm({
         <TextInput
           label="Designation"
           name="designation"
+          maxLength={120}
           required
           value={values.designation}
           error={errors.designation}
@@ -179,6 +207,7 @@ export function StaffForm({
         <TextInput
           label="Address line 1"
           name="addressLine1"
+          maxLength={250}
           required
           value={values.addressLine1}
           error={errors.addressLine1}
@@ -187,12 +216,14 @@ export function StaffForm({
         <TextInput
           label="Address line 2"
           name="addressLine2"
+          maxLength={250}
           value={values.addressLine2}
           onChange={(event) => patch({ addressLine2: event.target.value })}
         />
         <TextInput
           label="City"
           name="city"
+          maxLength={100}
           required
           value={values.city}
           error={errors.city}
@@ -201,6 +232,7 @@ export function StaffForm({
         <TextInput
           label="State"
           name="state"
+          maxLength={100}
           required
           value={values.state}
           error={errors.state}
@@ -209,12 +241,14 @@ export function StaffForm({
         <TextInput
           label="Postal code"
           name="postalCode"
+          maxLength={20}
           value={values.postalCode}
           onChange={(event) => patch({ postalCode: event.target.value })}
         />
         <TextInput
           label="Emergency contact"
           name="emergencyName"
+          maxLength={120}
           required
           value={values.emergencyName}
           error={errors.emergencyName}
@@ -223,6 +257,7 @@ export function StaffForm({
         <TextInput
           label="Relationship"
           name="emergencyRelationship"
+          maxLength={80}
           value={values.emergencyRelationship}
           onChange={(event) => patch({ emergencyRelationship: event.target.value })}
         />
@@ -236,11 +271,12 @@ export function StaffForm({
         />
       </div>
 
+      </fieldset>
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={submitting || lookingUp}>
           Cancel
         </Button>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || lookingUp}>
           {submitting ? 'Saving…' : mode === 'create' ? 'Add staff' : 'Save changes'}
         </Button>
       </div>

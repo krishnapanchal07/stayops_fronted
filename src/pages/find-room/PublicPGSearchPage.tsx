@@ -4,8 +4,8 @@ import { ChevronRight, List, Map as MapIcon, X } from 'lucide-react';
 import { PATHS } from '@/routes/paths';
 import { usePGDiscovery } from '@/hooks/usePGDiscovery';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { filterPublicPGs, parseDiscoveryFilters, sortPublicPGs } from '@/utils/pgDiscovery';
-import { locationWithinBounds, parseDiscoveryBounds } from '@/utils/propertyLocations';
+import { parseDiscoveryFilters, sortPublicPGs } from '@/utils/pgDiscovery';
+import { parseDiscoveryBounds } from '@/utils/propertyLocations';
 import type { DiscoveryBounds, DiscoverySort, PublicPG } from '@/types/discovery';
 import {
   DiscoveryFilters,
@@ -23,8 +23,6 @@ const PAGE_SIZE = 4;
 const EMPTY_PROPERTIES: PublicPG[] = [];
 
 export default function PublicPGSearchPage() {
-  const { data, status, error, reload } = usePGDiscovery();
-  const properties = data ?? EMPTY_PROPERTIES;
   const [params, setParams] = useSearchParams();
   // Pagination/map state do not invalidate filter/aggregation memoization.
   const filterKey = [...params.entries()]
@@ -33,6 +31,10 @@ export default function PublicPGSearchPage() {
     .join('&');
   const filters = useMemo(() => parseDiscoveryFilters(new URLSearchParams(filterKey)), [filterKey]);
   const query = useDebouncedValue(filters.query, 300);
+  const requestParams=new URLSearchParams(params);requestParams.set('query',query);requestParams.set('limit',String(PAGE_SIZE));requestParams.set('offset',String((Math.max(1,Number(params.get('page'))||1)-1)*PAGE_SIZE));
+  const {data,status,error,reload}=usePGDiscovery(requestParams.toString());
+  const properties=data?.items??EMPTY_PROPERTIES;
+  const total=data?.total??0;
   const areaValue = params.get('bounds');
   const area = useMemo(() => parseDiscoveryBounds(areaValue), [areaValue]);
   const sortValue = params.get('sort');
@@ -56,21 +58,10 @@ export default function PublicPGSearchPage() {
   );
   const [mobileMap, setMobileMap] = useState(false);
   const [mapRequested, setMapRequested] = useState(false);
-  const filtered = useMemo(() => {
-    const matches = filterPublicPGs(properties, { ...filters, query });
-    return sortPublicPGs(
-      area ? matches.filter((pg) => locationWithinBounds(pg.location, area)) : matches,
-      sort,
-      origin,
-    );
-  }, [properties, filters, query, area, sort, origin]);
-  const maxPage = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageValue = Number(params.get('page') || 1);
-  const page = Number.isInteger(pageValue) ? Math.max(1, Math.min(maxPage, pageValue)) : 1;
-  const pageItems = useMemo(
-    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filtered, page],
-  );
+  const filtered=useMemo(()=>sortPublicPGs(properties,sort,origin),[properties,sort,origin]);
+  const maxPage=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  const page=Math.max(1,Math.min(maxPage,Number(params.get('page'))||1));
+  const pageItems=filtered;
   const validHighlight =
     highlightedId && filtered.some((pg) => pg.id === highlightedId) ? highlightedId : null;
   const matchedBeds = useMemo(
@@ -212,6 +203,7 @@ export default function PublicPGSearchPage() {
       <DiscoveryFilters
         filters={filters}
         properties={properties}
+        options={data?.options}
         onChange={update}
         onClear={clear}
         sort={sort}
@@ -250,7 +242,7 @@ export default function PublicPGSearchPage() {
           >
             <div aria-live="polite" aria-atomic="true">
               <h2 className="text-sm font-semibold">
-                {filtered.length} {filtered.length === 1 ? 'property' : 'properties'}
+                {total} {total === 1 ? 'property' : 'properties'}
                 {filters.city ? ` in ${filters.city}` : ''}
                 <span className="ml-2 font-normal text-text-secondary">
                   · {matchedBeds} matching available beds
@@ -335,7 +327,7 @@ export default function PublicPGSearchPage() {
                     <Pagination
                       page={page}
                       pageSize={PAGE_SIZE}
-                      total={filtered.length}
+                      total={total}
                       onPageChange={changePage}
                     />
                   </div>

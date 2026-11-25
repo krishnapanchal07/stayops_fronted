@@ -1,21 +1,15 @@
-# StayOps mock authentication (development only)
+# StayOps authentication and remaining mock data
 
-These accounts exist only in `credentials.json`. They are not shown in the login UI.
+Authentication now uses the FastAPI/PostgreSQL backend. Legacy mock credentials
+are unused and cannot sign in. Create real accounts through the secure bootstrap
+and super-admin provisioning flow in [Backend setup](../../../Backend/README.md).
+No mock users or known development passwords are imported into the database.
 
-Shared demo password: `StayOps@123`
-
-| Email | Password | Role |
-|---|---|---|
-| `krishna@stayops.com` | `krishna@2908` | Super Admin |
-| `admin@stayops.com` | `StayOps@123` | Super Admin |
-| `owner@stayops.com` | `StayOps@123` | Owner |
-| `warden@stayops.com` | `StayOps@123` | Warden |
-| `accountant@stayops.com` | `StayOps@123` | Accountant |
-| `security@stayops.com` | `StayOps@123` | Security |
-| `maintenance@stayops.com` | `StayOps@123` | Maintenance |
-| `student@stayops.com` | `StayOps@123` | Tenant |
-| `onboarding@stayops.com` | `StayOps@123` | Tenant (no room assigned) |
-| `inactive@stayops.com` | `StayOps@123` | Inactive tenant |
+`users.json` remains available to mock business services. Its IDs do not represent
+authenticated database users. New UUID accounts have no inferred tenant/property
+assignments; tenant-specific mock records can therefore be empty or show an
+unavailable-profile/room state until those
+business modules gain real backend integration. No fake identity mapping is used.
 
 ## Tenant records (Phase 2 Part 3)
 

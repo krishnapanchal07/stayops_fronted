@@ -36,6 +36,7 @@ export function InquiryForm({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (submitting) return;
     const nextErrors = validateInquiryForm(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -55,19 +56,21 @@ export function InquiryForm({
         <TextInput
           label="First name"
           name="firstName"
+          maxLength={60}
           value={values.firstName}
           onChange={(event) => update('firstName', event.target.value)}
           error={errors.firstName}
-          disabled={lockIdentity}
+          disabled={lockIdentity || submitting}
           required
         />
         <TextInput
           label="Last name"
           name="lastName"
+          maxLength={60}
           value={values.lastName}
           onChange={(event) => update('lastName', event.target.value)}
           error={errors.lastName}
-          disabled={lockIdentity}
+          disabled={lockIdentity || submitting}
           required
         />
       </div>
@@ -75,16 +78,18 @@ export function InquiryForm({
       <TextInput
         label="Email"
         name="email"
+        maxLength={320}
         type="email"
         value={values.email}
         onChange={(event) => update('email', event.target.value)}
         error={errors.email}
-        disabled={lockIdentity}
+        disabled={lockIdentity || submitting}
         required
       />
       <TextInput
         label="Phone"
         name="phone"
+        maxLength={20}
         value={values.phone}
         onChange={(event) => update('phone', event.target.value)}
         error={errors.phone}
@@ -101,6 +106,7 @@ export function InquiryForm({
       <Textarea
         label="Message"
         name="message"
+        maxLength={2000}
         rows={4}
         value={values.message}
         onChange={(event) => update('message', event.target.value)}

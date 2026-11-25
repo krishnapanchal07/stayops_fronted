@@ -12,10 +12,14 @@ interface TenantStatusModalProps {
   onSubmit: (status: TenantStatus) => Promise<void>;
 }
 
-const options = Object.values(TenantStatus).map((value) => ({
-  value,
-  label: TENANT_STATUS_LABELS[value],
-}));
+const transitions: Record<TenantStatus, TenantStatus[]> = {
+  PROSPECT: ['ONBOARDING', 'INACTIVE'],
+  ONBOARDING: ['ACTIVE', 'INACTIVE', 'CHECKED_OUT'],
+  ACTIVE: ['NOTICE_PERIOD', 'INACTIVE', 'CHECKED_OUT'],
+  NOTICE_PERIOD: ['ACTIVE', 'INACTIVE', 'CHECKED_OUT'],
+  INACTIVE: ['ONBOARDING', 'ACTIVE', 'CHECKED_OUT'],
+  CHECKED_OUT: ['ONBOARDING'],
+};
 
 export function TenantStatusModal({
   open,
@@ -24,7 +28,8 @@ export function TenantStatusModal({
   onClose,
   onSubmit,
 }: TenantStatusModalProps) {
-  const [status, setStatus] = useState<TenantStatus>(tenant?.status ?? TenantStatus.ONBOARDING);
+  const options = (tenant ? transitions[tenant.status] : []).map((value) => ({ value, label: TENANT_STATUS_LABELS[value] }));
+  const [status, setStatus] = useState<TenantStatus>(options[0]?.value ?? TenantStatus.ONBOARDING);
   const [confirming, setConfirming] = useState(false);
 
   const needsConfirm = status === TenantStatus.INACTIVE || status === TenantStatus.CHECKED_OUT;
@@ -79,7 +84,7 @@ export function TenantStatusModal({
         {confirming ? (
           <p className="typo-secondary">
             {status === TenantStatus.INACTIVE
-              ? 'Deactivate this tenant? This will prevent normal tenant access.'
+              ? 'Deactivate this tenant? This releases the bed and disables tenant profile editing. Login access is managed separately.'
               : 'Mark this tenant as checked out? The assigned bed will be released.'}
           </p>
         ) : (

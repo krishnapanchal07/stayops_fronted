@@ -66,25 +66,27 @@ export function toStaffFormValues(staff: Staff): StaffFormValues {
   };
 }
 
-export function validateStaffForm(values: StaffFormValues): StaffFormErrors {
+export function validateStaffForm(values: StaffFormValues, allowSingleName = false): StaffFormErrors {
   const errors: StaffFormErrors = {};
   if (!values.firstName.trim()) errors.firstName = 'First name is required.';
-  if (!values.lastName.trim()) errors.lastName = 'Last name is required.';
+  if (!allowSingleName && !values.lastName.trim()) errors.lastName = 'Last name is required.';
+  if (`${values.firstName.trim()} ${values.lastName.trim()}`.trim().length > 120) errors.firstName = 'Full name must be at most 120 characters.';
   if (!values.email.trim()) errors.email = 'Email is required.';
   else if (!EMAIL_PATTERN.test(values.email.trim())) errors.email = 'Enter a valid email.';
   if (!values.phone.trim()) errors.phone = 'Phone is required.';
-  else if (!PHONE_PATTERN.test(values.phone.replace(/\D/g, '').slice(-10))) errors.phone = 'Enter a 10-digit phone number.';
+  else if (!PHONE_PATTERN.test(values.phone.replace(/\D/g, ''))) errors.phone = 'Enter a 10-digit phone number.';
   if (!values.role || !(values.role in StaffRole)) errors.role = 'Select a role.';
   if (!values.department || !(values.department in StaffDepartment)) errors.department = 'Select a department.';
   if (!values.designation.trim()) errors.designation = 'Designation is required.';
   if (values.propertyIds.length === 0) errors.propertyIds = 'Assign at least one property.';
-  if (!values.joiningDate) errors.joiningDate = 'Joining date is required.';
+  if (!values.joiningDate || Number.isNaN(new Date(values.joiningDate).getTime())) errors.joiningDate = 'Enter a valid joining date.';
   if (!values.status || !(values.status in StaffStatus)) errors.status = 'Select a status.';
   if (!values.addressLine1.trim()) errors.addressLine1 = 'Address is required.';
   if (!values.city.trim()) errors.city = 'City is required.';
   if (!values.state.trim()) errors.state = 'State is required.';
   if (!values.emergencyName.trim()) errors.emergencyName = 'Emergency contact is required.';
   if (!values.emergencyPhone.trim()) errors.emergencyPhone = 'Emergency phone is required.';
+  else if (!PHONE_PATTERN.test(values.emergencyPhone.replace(/\D/g, ''))) errors.emergencyPhone = 'Enter a 10-digit emergency phone number.';
   return errors;
 }
 

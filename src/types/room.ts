@@ -1,4 +1,5 @@
 export const RoomStatus = {
+  ARCHIVED: 'ARCHIVED',
   AVAILABLE: 'AVAILABLE',
   PARTIALLY_OCCUPIED: 'PARTIALLY_OCCUPIED',
   FULL: 'FULL',
@@ -36,6 +37,7 @@ export const SharingType = {
 export type SharingType = (typeof SharingType)[keyof typeof SharingType];
 
 export const ROOM_STATUS_LABELS: Record<RoomStatus, string> = {
+  ARCHIVED: 'Archived',
   AVAILABLE: 'Available',
   PARTIALLY_OCCUPIED: 'Partially Occupied',
   FULL: 'Full',
@@ -82,6 +84,14 @@ export interface TenantReference {
 }
 
 export interface RoomImage {
+  file?: File;
+  filename?: string;
+  thumbnail?: string;
+  medium?: string;
+  large?: string;
+  srcSet?: string;
+  width?: number;
+  height?: number;
   id: string;
   url: string;
   alt?: string;

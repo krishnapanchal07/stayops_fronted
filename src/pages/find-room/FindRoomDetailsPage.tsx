@@ -20,7 +20,7 @@ import type { InquiryFormValues } from '@/types/inquiry';
 import { formatINR } from '@/utils/format';
 import { DEFAULT_ROOM_POLICIES, hasAmenity, listingTitle, roomSpecRows } from '@/utils/roomListing';
 import { Bath, BookOpen, Fan, Shirt, Snowflake, Wifi } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 const amenityIcons = [
@@ -44,10 +44,13 @@ export function FindRoomDetailsPage() {
   const listPath = isTenantPath ? PATHS.tenant.findRoom : PATHS.findRoom;
   const requestedBedId = searchParams.get('bed') ?? '';
 
-  const loader = useCallback(() => roomService.getRoomById(roomId), [roomId]);
+  const loader = useCallback(async () => {
+    return roomService.getPublicRoomById(roomId);
+  }, [roomId]);
   const { data: room, status, error, reload } = useAsyncResource(loader);
   const [formOpen, setFormOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submission = useRef<{ payload: string; key: string } | null>(null);
 
   const bed = useMemo(() => {
     if (!room) return undefined;
@@ -70,11 +73,14 @@ export function FindRoomDetailsPage() {
   }, [bed, room, user]);
 
   const handleSubmit = async (values: InquiryFormValues) => {
-    if (!room || !bed) return;
+    if (!room || !bed || submitting) return;
+    const payload = JSON.stringify({ ...values, roomId: room.id, bedId: bed.id });
+    if (submission.current?.payload !== payload) submission.current = { payload, key: crypto.randomUUID() };
     setSubmitting(true);
     try {
       await inquiryService.submitInquiry({
         ...values,
+        idempotencyKey: submission.current.key,
         roomId: room.id,
         bedId: bed.id,
         userId: user?.id ?? null,

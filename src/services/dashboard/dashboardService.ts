@@ -1,8 +1,9 @@
+import { roomService } from '@/services/room/roomService';
+import { propertyService } from '@/services/property/propertyService';
 import accountantData from '@/mock/dashboards/accountant.json';
 import adminData from '@/mock/dashboards/admin.json';
 import maintenanceData from '@/mock/dashboards/maintenance.json';
 import securityData from '@/mock/dashboards/security.json';
-import tenantData from '@/mock/dashboards/tenant.json';
 import wardenData from '@/mock/dashboards/warden.json';
 import { complaintService } from '@/services/complaint/complaintService';
 import { financeService } from '@/services/finance/financeService';
@@ -20,14 +21,12 @@ import type {
   WardenDashboardData,
 } from '@/types/dashboard';
 import { COMPLAINT_PRIORITY_LABELS, COMPLAINT_STATUS_LABELS } from '@/types/complaint';
-import { InvoiceStatus } from '@/types/finance';
 import { LEAVE_TYPE_LABELS } from '@/types/leave';
 import { VisitorStatus } from '@/types/visitor';
 import { emptyEntryExitFilters } from '@/utils/entryExitRules';
 import { formatINR, formatShortDate, formatTime } from '@/utils/format';
 import { localToday } from '@/utils/visitorRules';
 
-const tenantDashboards = tenantData as Record<string, TenantDashboardData>;
 
 function wait<T>(value: T, ms = 180): Promise<T> {
   return new Promise((resolve) => {
@@ -42,6 +41,10 @@ function wait<T>(value: T, ms = 180): Promise<T> {
 export const dashboardService = {
   async getAdminDashboard(): Promise<AdminDashboardData> {
     const base = adminData as AdminDashboardData;
+    const [inventory,properties,tenantSummary]=await Promise.all([roomService.getRoomSummary(),propertyService.getProperties(),tenantService.getTenantSummary()]);
+    base.occupancy={percent:inventory.occupancyPercent,occupied:inventory.occupiedBeds,vacant:inventory.availableBeds,slices:[{name:'Occupied',value:inventory.occupiedBeds},{name:'Available',value:inventory.availableBeds}]};
+    base.occupancyByProperty=properties.map(p=>({id:p.id,name:p.name,occupied:p.occupiedBeds,total:p.totalBeds}));
+    base.stats=base.stats.map(metric=>metric.id==='properties'?{...metric,value:String(properties.length),trend:undefined}:metric.id==='rooms'?{...metric,value:String(inventory.totalRooms),hint:`${inventory.occupancyPercent}% occupied`,trend:undefined}:metric.id==='tenants'?{...metric,value:String(tenantSummary.totalTenants),trend:undefined}:metric);
     const overview = await financeService.getFinanceOverview();
     const complaints = await complaintService.getComplaints();
     const visitors = await visitorService.getVisitors();
@@ -81,75 +84,20 @@ export const dashboardService = {
   },
 
   async getTenantDashboard(userId: string): Promise<TenantDashboardData> {
-    const data = tenantDashboards[userId] ?? tenantDashboards['user-tenant'];
-    if (!data) {
-      return Promise.reject(new Error('Tenant dashboard data is unavailable.'));
-    }
-    const summary = await financeService.getTenantFinancialSummary(userId);
-    const complaints = await complaintService.getComplaintSummary(userId);
-    const tenant = await tenantService.getTenantById(userId).catch(() => null);
-    const notices = tenant ? await noticeService.getTenantNotices(tenant.id) : [];
-    const unreadNotices = notices.filter((notice) => !notice.isRead && notice.status === 'PUBLISHED');
-    const roomLabel = tenant?.roomNumber
-      ? `${tenant.roomNumber}${tenant.bedLabel ? ` · ${tenant.bedLabel}` : ''}`
-      : 'Unassigned';
-    const currentMonthPaid = Math.max(0, summary.currentMonthCharges - summary.openInvoices
-      .filter((invoice) => invoice.billingPeriod === new Date().toISOString().slice(0, 7))
-      .reduce((sum, invoice) => sum + invoice.outstandingAmount, 0));
-    return wait({
-      ...data,
-      room: roomLabel,
-      stats: data.stats.map((metric) => {
-        if (metric.id === 'room') {
-          return {
-            ...metric,
-            value: roomLabel,
-            hint: tenant?.propertyName ?? 'No property assigned',
-          };
-        }
-        if (metric.id === 'due') {
-          return {
-            ...metric,
-            value: formatINR(summary.currentDue),
-            hint: summary.nextDueDate ? `Due ${formatShortDate(summary.nextDueDate)}` : 'No open dues',
-          };
-        }
-        if (metric.id === 'complaints') {
-          return {
-            ...metric,
-            value: String(complaints.open + complaints.inProgress),
-            hint: complaints.urgent > 0 ? `${complaints.urgent} urgent` : `${complaints.overdue} overdue`,
-          };
-        }
-        if (metric.id === 'notices') {
-          return {
-            ...metric,
-            value: String(unreadNotices.length),
-            hint: unreadNotices.length ? 'Unread published notices' : 'You are all caught up',
-          };
-        }
-        return metric;
-      }),
-      recentNotices: notices.slice(0, 3).map((notice) => ({
-        id: notice.id,
-        title: notice.title,
-        date: formatShortDate(notice.publishDate),
-        isNew: !notice.isRead,
-      })),
-      rent: {
-        total: summary.currentMonthCharges,
-        paid: currentMonthPaid,
-        due: summary.currentDue,
-        dueDate: summary.nextDueDate ? formatShortDate(summary.nextDueDate) : '—',
-      },
-      upcomingPayments: summary.openInvoices.map((invoice) => ({
-        id: invoice.id,
-        title: invoice.items[0]?.description ?? invoice.invoiceNumber,
-        amount: invoice.outstandingAmount,
-        dueDate: formatShortDate(invoice.dueDate),
-        status: invoice.status === InvoiceStatus.OVERDUE ? 'Overdue' : invoice.status === InvoiceStatus.PAID ? 'Paid' : 'Due',
-      })),
-    });
+    if (!userId) throw new Error('Unable to load dashboard.');
+    const tenant = await tenantService.getMyTenant();
+    const room = tenant?.roomNumber ? `${tenant.roomNumber} · ${tenant.bedLabel ?? ''}` : 'Unassigned';
+    return {
+      room,
+      stats: [
+        { id: 'room', label: 'My Room', value: room, tone: 'primary', hint: tenant?.propertyName ?? 'Onboarding pending' },
+        { id: 'due', label: 'Payments', value: 'Unavailable', tone: 'warning', hint: 'Payments are not connected yet' },
+        { id: 'complaints', label: 'Complaints', value: 'Unavailable', tone: 'info', hint: 'Complaints are not connected yet' },
+        { id: 'notices', label: 'Tenant status', value: tenant?.status ?? 'Onboarding pending', tone: 'primary' },
+      ],
+      rent: { total: tenant?.roomRent ?? 0, paid: 0, due: 0, dueDate: 'Unavailable' },
+      upcomingPayments: [], recentNotices: [],
+    };
   },
 
   async getAccountantDashboard(): Promise<AccountantDashboardData> {
@@ -267,6 +215,10 @@ export const dashboardService = {
 
   async getWardenDashboard(propertyIds?: string[]): Promise<WardenDashboardData> {
     const base = wardenData as WardenDashboardData;
+    const inventory=await roomService.getRoomSummary();
+    const tenants=await tenantService.getTenantSummary();
+    base.occupancy={percent:inventory.occupancyPercent,occupied:inventory.occupiedBeds,vacant:inventory.availableBeds,slices:[{name:'Occupied',value:inventory.occupiedBeds},{name:'Available',value:inventory.availableBeds}]};
+    base.stats=base.stats.map(metric=>metric.id==='occupancy'?{...metric,value:`${inventory.occupancyPercent}%`,hint:`${inventory.occupiedBeds} / ${inventory.totalBeds} beds`}:metric.id==='tenants'?{...metric,value:String(tenants.totalTenants),hint:undefined}:metric);
     const [summary, visitorSummary, leaveSummary, visitors, leaves, notices] = await Promise.all([
       complaintService.getComplaintSummary(undefined, propertyIds),
       visitorService.getVisitorSummary(undefined, propertyIds),

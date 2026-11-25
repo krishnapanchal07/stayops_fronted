@@ -13,9 +13,8 @@ import { useHasPermission } from '@/hooks/useHasPermission';
 import { useToast } from '@/hooks/useToast';
 import { PATHS, tenantDetailPath, wardenTenantDetailPath } from '@/routes/paths';
 import { inquiryService } from '@/services/inquiry/inquiryService';
-import { roomService } from '@/services/room/roomService';
 import { INQUIRY_STATUS_LABELS, InquiryStatus } from '@/types/inquiry';
-import { BedStatus, SHARING_TYPE_LABELS } from '@/types/room';
+import { SHARING_TYPE_LABELS } from '@/types/room';
 import { formatINR, formatPhone, formatShortDate } from '@/utils/format';
 import { allowedInquiryTransitions, isOpenInquiry } from '@/utils/inquiryStats';
 import { useCallback, useState } from 'react';
@@ -54,9 +53,13 @@ export function InquiryDetailsPage() {
       setConvertOpen(true);
       return;
     }
-    const bed = await roomService.findBed(inquiry.roomId, inquiry.bedId);
-    setBedAvailable(bed?.status === BedStatus.AVAILABLE);
-    setConvertOpen(true);
+    try {
+      const availability = await inquiryService.getInventoryAvailability();
+      setBedAvailable(availability[inquiry.roomId]?.[inquiry.bedId] === true);
+      setConvertOpen(true);
+    } catch (cause) {
+      toast('error', cause instanceof Error ? cause.message : 'Unable to check bed availability.');
+    }
   };
 
   const tenantPath = inquiry?.tenantId
@@ -100,7 +103,7 @@ export function InquiryDetailsPage() {
                   Change Status
                 </Button>
               ) : null}
-              {canConvert && inquiry.status === InquiryStatus.APPROVED ? (
+              {canConvert && inquiry.kind === 'ROOM' && inquiry.status === InquiryStatus.APPROVED ? (
                 <Button onClick={() => void openConvert()}>Convert to Tenant</Button>
               ) : null}
             </div>
@@ -132,11 +135,11 @@ export function InquiryDetailsPage() {
           </Card>
 
           <Card>
-            <CardHeader title="Requested Room" />
+            <CardHeader title={inquiry.kind === 'ROOM' ? 'Requested Room' : 'General inquiry'} />
             <dl className="space-y-3 text-sm">
               <Detail label="Listing" value={inquiry.listingTitle} />
               <Detail label="Property" value={inquiry.propertyName} />
-              <Detail label="Sharing" value={SHARING_TYPE_LABELS[inquiry.sharingType]} />
+              <Detail label="Sharing" value={inquiry.sharingType ? SHARING_TYPE_LABELS[inquiry.sharingType] : 'Not applicable'} />
               <Detail label="Rent" value={`${formatINR(inquiry.monthlyRent)} /month`} />
               <Detail label="Inquiry ID" value={inquiry.id} />
               {tenantPath ? (
