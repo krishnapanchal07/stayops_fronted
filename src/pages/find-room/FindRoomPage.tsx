@@ -14,7 +14,7 @@ import { RENT_RANGE_LABELS, RentRange, type FindRoomFilters } from '@/types/inqu
 import { ROOM_TYPE_LABELS, RoomType, SHARING_TYPE_LABELS, SharingType } from '@/types/room';
 import { emptyFindRoomFilters } from '@/utils/roomListing';
 import { Search } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 8;
@@ -27,13 +27,13 @@ export function FindRoomPage() {
   const [filters, setFilters] = useState<FindRoomFilters>(emptyFindRoomFilters());
   const [page, setPage] = useState(1);
 
-  const listingsLoader = useCallback(() => roomService.listAvailableListings(filters), [filters]);
-  const propertiesLoader = useCallback(() => propertyService.getProperties(), []);
+  const listingsLoader = useCallback(() => roomService.getAvailablePage(filters,page,PAGE_SIZE), [filters,page]);
+  const propertiesLoader = useCallback(() => propertyService.getPublicProperties(), []);
   const { data, status, error, reload } = useAsyncResource(listingsLoader);
   const { data: properties } = useAsyncResource(propertiesLoader);
 
-  const listings = useMemo(() => data ?? [], [data]);
-  const pageItems = listings.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const listings = data?.items ?? [];
+  const pageItems = listings;
   const detailPath = isTenantPath ? tenantFindRoomDetailPath : publicFindRoomDetailPath;
 
   const applySearch = () => {
@@ -127,7 +127,7 @@ export function FindRoomPage() {
           />
         ) : (
           <div className="space-y-4">
-            <p className="text-sm font-medium text-text">Rooms ({listings.length})</p>
+            <p className="text-sm font-medium text-text">Available beds ({data?.total ?? 0})</p>
             {pageItems.map((listing) => (
               <RoomListingCard
                 key={listing.id}
@@ -135,11 +135,11 @@ export function FindRoomPage() {
                 onView={() => navigate(detailPath(listing.roomId, listing.bedId))}
               />
             ))}
-            {listings.length > PAGE_SIZE ? (
+            {(data?.total ?? 0) > PAGE_SIZE ? (
               <Pagination
                 page={page}
                 pageSize={PAGE_SIZE}
-                total={listings.length}
+                total={data?.total ?? 0}
                 onPageChange={setPage}
               />
             ) : null}

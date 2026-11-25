@@ -1,3 +1,4 @@
+import { InventoryHierarchy } from '@/components/properties/InventoryHierarchy';
 import { Card, CardHeader } from '@/components/common/Card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
@@ -15,11 +16,9 @@ import { useHasPermission } from '@/hooks/useHasPermission';
 import { useToast } from '@/hooks/useToast';
 import { PATHS, propertyDetailPath } from '@/routes/paths';
 import { propertyService } from '@/services/property/propertyService';
-import { roomService } from '@/services/room/roomService';
 import { buildingTotals, floorOccupancy } from '@/utils/propertyStats';
-import { summarizeRooms } from '@/utils/roomStats';
 import { Pencil } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 export function BuildingDetailsPage() {
@@ -27,13 +26,9 @@ export function BuildingDetailsPage() {
   const toast = useToast();
   const canEdit = useHasPermission(Permission.PROPERTY_EDIT);
   const loader = useCallback(() => propertyService.getPropertyById(propertyId), [propertyId]);
-  const roomsLoader = useCallback(() => roomService.getRoomsByBuilding(buildingId), [buildingId]);
   const { data: property, status, error, reload } = useAsyncResource(loader);
-  const { data: rooms } = useAsyncResource(roomsLoader);
   const building = property?.buildings.find((item) => item.id === buildingId);
-  const floorTotals = building ? buildingTotals(building) : null;
-  const inventory = useMemo(() => (rooms ? summarizeRooms(rooms) : null), [rooms]);
-  const totals = inventory ?? floorTotals;
+  const totals = building ? buildingTotals(building) : null;
 
   const [formOpen, setFormOpen] = useState(false);
   const [buildingName, setBuildingName] = useState('');
@@ -105,6 +100,7 @@ export function BuildingDetailsPage() {
           />
 
           <div className="space-y-5">
+            {canEdit && <InventoryHierarchy propertyId={property.id} buildings={property.buildings} onSaved={reload} buildingId={buildingId} />}
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
                 metric={{
@@ -162,14 +158,11 @@ export function BuildingDetailsPage() {
                 ) : (
                   <ul className="space-y-4">
                     {building.floors.map((floor) => {
-                      const floorInventory = rooms
-                        ? summarizeRooms(rooms.filter((room) => room.floorId === floor.id))
-                        : null;
-                      const percent = floorInventory?.occupancyPercent ?? floorOccupancy(floor);
-                      const roomCount = floorInventory?.totalRooms ?? floor.roomCount;
-                      const bedCount = floorInventory?.totalBeds ?? floor.bedCount;
-                      const occupied = floorInventory?.occupiedBeds ?? floor.occupiedBeds;
-                      const available = floorInventory?.availableBeds ?? Math.max(0, floor.bedCount - floor.occupiedBeds);
+                      const percent = floorOccupancy(floor);
+                      const roomCount = floor.roomCount;
+                      const bedCount = floor.bedCount;
+                      const occupied = floor.occupiedBeds;
+                      const available = floor.availableBeds ?? 0;
                       return (
                         <li key={floor.id} className="rounded-2xl border border-border bg-background p-4">
                           <div className="flex items-start justify-between gap-3">

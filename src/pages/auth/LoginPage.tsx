@@ -48,15 +48,14 @@ export function LoginPage() {
       return;
     }
 
-    const result = await login(email, password);
+    const result = await login(email, password, remember);
     if (loginUser.fulfilled.match(result)) {
       toast('success', `Welcome back, ${result.payload.user.name}`);
       navigate(getHomePath(result.payload.role), { replace: true });
       return;
     }
 
-    const message =
-      typeof result.payload === 'string' ? result.payload : AUTH_ERRORS.unexpected;
+    const message = typeof result.payload === 'string' ? result.payload : AUTH_ERRORS.unexpected;
     setErrors({ form: message });
     toast('error', 'Login failed', message);
   };
@@ -100,7 +99,10 @@ export function LoginPage() {
             checked={remember}
             onChange={(event) => setRemember(event.target.checked)}
           />
-          <Link to={PATHS.forgotPassword} className="text-sm font-medium text-primary hover:underline">
+          <Link
+            to={PATHS.forgotPassword}
+            className="text-sm font-medium text-primary hover:underline"
+          >
             Forgot Password?
           </Link>
         </div>

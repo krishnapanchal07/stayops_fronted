@@ -4,25 +4,14 @@ import type { AuthState } from '@/types/auth';
 import type { AuthSession } from '@/types/user';
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-const restored = authService.restoreSession();
-
-const initialState: AuthState = restored
-  ? {
-      isAuthenticated: true,
-      user: restored.user,
-      role: restored.role,
-      permissions: restored.permissions,
-      status: 'succeeded',
-      error: null,
-    }
-  : {
-      isAuthenticated: false,
-      user: null,
-      role: null,
-      permissions: [],
-      status: 'idle',
-      error: null,
-    };
+const initialState: AuthState = {
+  isAuthenticated: false,
+  user: null,
+  role: null,
+  permissions: [],
+  status: 'loading',
+  error: null,
+};
 
 function applySession(state: AuthState, session: AuthSession) {
   state.isAuthenticated = true;
@@ -44,9 +33,9 @@ function resetSession(state: AuthState) {
 
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async (payload: { email: string; password: string }, { rejectWithValue }) => {
+  async (payload: { email: string; password: string; remember?: boolean }, { rejectWithValue }) => {
     try {
-      return await authService.login(payload.email, payload.password);
+      return await authService.login(payload.email, payload.password, payload.remember);
     } catch (error) {
       const message = error instanceof AuthError ? error.message : AUTH_ERRORS.unexpected;
       return rejectWithValue(message);
@@ -58,16 +47,28 @@ export const logoutUser = createAsyncThunk('auth/logout', async () => {
   await authService.logout();
 });
 
+export const restoreUser = createAsyncThunk('auth/restore', () => authService.restoreSession());
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    sessionExpired(state) {
+      resetSession(state);
+    },
     sessionApplied(state, action: PayloadAction<AuthSession>) {
       applySession(state, action.payload);
     },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(restoreUser.fulfilled, (state, action) => {
+        if (action.payload) applySession(state, action.payload);
+        else resetSession(state);
+      })
+      .addCase(restoreUser.rejected, (state) => {
+        resetSession(state);
+      })
       .addCase(loginUser.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -86,5 +87,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { sessionApplied } = authSlice.actions;
+export const { sessionApplied, sessionExpired } = authSlice.actions;
 export const authReducer = authSlice.reducer;

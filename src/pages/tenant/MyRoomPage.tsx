@@ -34,7 +34,8 @@ export function MyRoomPage() {
 
   const loader = useCallback(async () => {
     if (!tenantId) throw new Error('Unable to load room information.');
-    const tenant = await tenantService.getTenantById(tenantId);
+    const tenant = await tenantService.getMyTenant();
+    if (!tenant) return { tenant: null, room: null, bed: null, roommates: [], property: null, rules: [] };
     const [room, bed, roommates, property, rules] = await Promise.all([
       tenantService.getTenantRoom(tenantId),
       tenantService.getTenantBed(tenantId),
@@ -64,7 +65,7 @@ export function MyRoomPage() {
         <ErrorState title="Unable to load room information." description={error ?? undefined} onRetry={reload} />
       ) : null}
 
-      {status === 'success' && data && !data.tenant.roomId ? (
+      {status === 'success' && data && !data.tenant?.roomId ? (
         <Card>
           <EmptyState
             icon={<BedDouble className="h-8 w-8" />}
@@ -108,6 +109,7 @@ export function MyRoomPage() {
 
             <Card>
               <CardHeader title="Room information" />
+              <p className="typo-helper mb-4">Allocation is saved on the server. Room photos, amenities and rules use the temporary development catalog.</p>
               <dl className="grid gap-4 sm:grid-cols-2">
                 <Info label="Room" value={data.room.roomNumber} />
                 <Info label="Building" value={data.room.buildingName} />
@@ -115,8 +117,6 @@ export function MyRoomPage() {
                 <Info label="Room type" value={ROOM_TYPE_LABELS[data.room.roomType]} />
                 <Info label="Sharing" value={SHARING_TYPE_LABELS[data.room.sharingType]} />
                 <Info label="Capacity" value={String(data.room.capacity)} />
-                <Info label="Occupied" value={String(occupancy.occupiedBeds)} />
-                <Info label="Available" value={String(occupancy.availableBeds)} />
                 <Info label="Rent" value={`${formatINR(data.room.monthlyRent)}/month`} />
                 <Info label="Deposit" value={formatINR(data.tenant.securityDeposit ?? data.room.securityDeposit)} />
               </dl>
@@ -180,7 +180,7 @@ export function MyRoomPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="typo-secondary">You are currently the only occupant.</p>
+                <p className="typo-secondary">Roommate information is unavailable until the inventory module is connected.</p>
               )}
             </Card>
 

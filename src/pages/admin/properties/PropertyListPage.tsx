@@ -1,3 +1,5 @@
+import { PropertyPhoto } from '@/components/properties/PropertyGallery';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { Card } from '@/components/common/Card';
 import { Dropdown } from '@/components/common/Dropdown';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -29,10 +31,10 @@ import {
   type PropertyListItem,
 } from '@/types/property';
 import { formatINR } from '@/utils/format';
-import { filterProperties, summarizeProperties, uniqueCities } from '@/utils/propertyStats';
+
 import { toPropertyFormValues } from '@/utils/propertyValidation';
 import { MoreHorizontal, Plus } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState, type SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const emptyFilters: PropertyFilters = {
@@ -47,10 +49,18 @@ export function PropertyListPage() {
   const toast = useToast();
   const canCreate = useHasPermission(Permission.PROPERTY_CREATE);
   const canEdit = useHasPermission(Permission.PROPERTY_EDIT);
-  const loader = useCallback(() => propertyService.getProperties(), []);
-  const { data, status, error, reload } = useAsyncResource(loader);
-
-  const [filters, setFilters] = useState<PropertyFilters>(emptyFilters);
+  const [filters, storeFilters] = useState<PropertyFilters>(emptyFilters);
+  const [page, setPage] = useState(1);
+  const setFilters = (next: SetStateAction<PropertyFilters>) => {setPage(1);storeFilters(next);};
+  const [sort, setSort] = useState({id:'name',direction:'asc' as 'asc' | 'desc'});
+  const query = useDebouncedValue(filters.query, 300);
+  const {status: statusFilter, type: typeFilter, city: cityFilter} = filters;
+  const [ownerFilter,setOwnerFilter] = useState('');
+  const { data: owners } = useAsyncResource(propertyService.getOwners);
+  const loader = useCallback(() => propertyService.getPage(new URLSearchParams({status:statusFilter,type:typeFilter,city:cityFilter,...(ownerFilter ? {ownerUserId:ownerFilter} : {}),query,offset:String((page-1)*6),limit:'6',sortBy:sort.id,sortDirection:sort.direction})), [statusFilter,typeFilter,cityFilter,ownerFilter,query,page,sort]);
+  const { data, status, error, reload: reloadList } = useAsyncResource(loader);
+  const { data: summaryData, reload: reloadSummary } = useAsyncResource(propertyService.getPropertySummary);
+  const reload = () => { reloadList(); reloadSummary(); };
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editing, setEditing] = useState<PropertyListItem | null>(null);
@@ -58,11 +68,10 @@ export function PropertyListPage() {
   const [statusTarget, setStatusTarget] = useState<PropertyListItem | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
 
-  const properties = data ?? [];
-  const filtered = useMemo(() => filterProperties(properties, filters), [filters, properties]);
-  const summary = useMemo(() => summarizeProperties(properties), [properties]);
-  const cities = useMemo(() => uniqueCities(properties), [properties]);
-  const filtersActive = Boolean(filters.query || filters.status || filters.type || filters.city);
+  const filtered = data?.items ?? [];
+  const summary = summaryData ?? {totalProperties:0,activeProperties:0,totalRooms:0,occupancyPercent:0};
+  const cities = summaryData?.cities ?? [];
+  const filtersActive = Boolean(filters.query || filters.status || filters.type || filters.city || ownerFilter);
 
   const openCreate = () => {
     setFormMode('create');
@@ -76,21 +85,26 @@ export function PropertyListPage() {
     setFormOpen(true);
   };
 
-  const handleSave = async (values: PropertyFormValues) => {
+  const handleSave = async (values: PropertyFormValues, files: File[]) => {
+    if (saving) return;
     setSaving(true);
     try {
       if (formMode === 'edit' && editing) {
         await propertyService.updateProperty(editing.id, values);
         toast('success', 'Property updated successfully.');
       } else {
-        await propertyService.createProperty(values);
+        const created = await propertyService.createProperty(values);
+        if (files.length) {
+          try { await propertyService.upload(created.id,files); }
+          catch { setFormOpen(false); reload(); navigate(propertyDetailPath(created.id)); toast('error','Property saved. Image upload failed; retry from the gallery.'); return; }
+        }
         toast('success', 'Property created successfully.');
       }
       setFormOpen(false);
       setEditing(null);
       reload();
-    } catch {
-      toast('error', 'Unable to save property.');
+    } catch (cause) {
+      toast('error', cause instanceof Error ? cause.message : 'Unable to save property.');
     } finally {
       setSaving(false);
     }
@@ -124,7 +138,7 @@ export function PropertyListPage() {
       sortable: true,
       render: (row) => (
         <div>
-          <p className="font-semibold text-text">{row.name}</p>
+          <div className="mb-2 w-28"><PropertyPhoto image={row.coverImage} /></div><p className="font-semibold text-text">{row.name}{row.isDemo ? ' · DEMO' : ''}</p>
           <p className="typo-helper">{row.address}</p>
         </div>
       ),
@@ -143,21 +157,21 @@ export function PropertyListPage() {
       sortable: true,
       render: (row) => `${row.city}, ${row.state}`,
     },
-    { id: 'buildings', header: 'Buildings', accessor: 'totalBuildings', sortable: true },
-    { id: 'rooms', header: 'Rooms', accessor: 'totalRooms', sortable: true },
-    { id: 'occupied', header: 'Occupied Beds', accessor: 'occupiedBeds', sortable: true },
+    { id: 'buildings', header: 'Buildings', accessor: 'totalBuildings', sortable: false },
+    { id: 'rooms', header: 'Rooms', accessor: 'totalRooms', sortable: false },
+    { id: 'occupied', header: 'Occupied Beds', accessor: 'occupiedBeds', sortable: false },
     {
       id: 'occupancy',
       header: 'Occupancy',
       accessor: 'occupancyPercent',
-      sortable: true,
+      sortable: false,
       render: (row) => `${row.occupancyPercent}%`,
     },
     {
       id: 'revenue',
       header: 'Monthly Revenue',
       accessor: 'monthlyRevenue',
-      sortable: true,
+      sortable: false,
       render: (row) => formatINR(row.monthlyRevenue),
     },
     {
@@ -243,9 +257,10 @@ export function PropertyListPage() {
 
           <Card>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <Select name="ownerFilter" aria-label="Filter owner" value={ownerFilter} options={[{label:'All owners',value:''},...(owners ?? []).map(o=>({label:o.name,value:o.id}))]} onChange={event=>{setOwnerFilter(event.target.value);setPage(1);}} />
               <SearchInput
                 value={filters.query}
-                onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
+                onChange={(event) => {setPage(1); setFilters((current) => ({ ...current, query: event.target.value }));}}
                 placeholder="Search property name"
                 aria-label="Search property name"
               />
@@ -290,11 +305,11 @@ export function PropertyListPage() {
                   { label: 'All cities', value: '' },
                   ...cities.map((city) => ({ value: city, label: city })),
                 ]}
-                onChange={(event) => setFilters((current) => ({ ...current, city: event.target.value }))}
+                onChange={(event) => {setPage(1);setFilters((current) => ({ ...current, city: event.target.value }));}}
               />
               <Button
                 variant="outline"
-                onClick={() => setFilters(emptyFilters)}
+                onClick={() => {setFilters(emptyFilters);setOwnerFilter('');setPage(1);}}
                 disabled={!filtersActive}
               >
                 Clear Filters
@@ -305,6 +320,8 @@ export function PropertyListPage() {
           <DataTable
             columns={columns}
             data={filtered}
+            serverPagination={{page,pageSize:6,total:data?.total ?? 0,onPageChange:setPage}}
+            serverSorting={{...sort,onSort:(id,direction) => {setSort({id,direction});setPage(1);}}}
             rowKey={(row) => row.id}
             searchable={false}
             pageSize={6}
@@ -326,8 +343,8 @@ export function PropertyListPage() {
       <Modal
         open={formOpen}
         title={formMode === 'create' ? 'Add Property' : 'Edit Property'}
-        onClose={() => setFormOpen(false)}
-        className="max-w-2xl"
+        onClose={() => {if (!saving) setFormOpen(false);}}
+        className="max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
         <PropertyForm
           key={editing?.id ?? 'create'}
@@ -335,7 +352,7 @@ export function PropertyListPage() {
           initialValues={editing ? toPropertyFormValues(editing) : undefined}
           submitting={saving}
           onSubmit={handleSave}
-          onCancel={() => setFormOpen(false)}
+          onCancel={() => {if (!saving) setFormOpen(false);}}
         />
       </Modal>
 

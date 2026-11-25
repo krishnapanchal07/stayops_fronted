@@ -10,7 +10,8 @@ export function useAuth() {
   return {
     ...auth,
     loading: auth.status === 'loading',
-    login: (email: string, password: string) => dispatch(loginUser({ email, password })),
+    login: (email: string, password: string, remember = true) =>
+      dispatch(loginUser({ email, password, remember })),
     logout: () => dispatch(logoutUser()),
   };
 }

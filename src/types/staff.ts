@@ -55,6 +55,8 @@ export const STAFF_DEPARTMENT_BY_ROLE: Record<StaffRole, StaffDepartment> = {
 };
 
 export interface Staff {
+  accountLinkPending?: boolean;
+  accountEnabled?: boolean;
   id: string;
   userId?: string;
   employeeCode: string;
@@ -86,6 +88,7 @@ export interface StaffFilters {
 }
 
 export interface StaffFormValues {
+  existingUserId?: string;
   firstName: string;
   lastName: string;
   email: string;

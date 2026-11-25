@@ -1,49 +1,38 @@
-/**
- * Phase 1 uses mock session persistence. Real authentication and JWT/token
- * handling will be implemented in Phase 3.
- *
- * Only a user id is stored. Role and permissions are resolved from mock data
- * on every restore so a deleted or inactive user cannot keep access.
- */
-const SESSION_KEY = 'stayops.mock.session';
+import type { AuthSession } from '@/types/user';
 
-export interface MockSessionPayload {
-  userId: string;
+// Tokens stay in memory. The browser manages the HttpOnly refresh cookie.
+let accessToken: string | null = null;
+let currentSession: AuthSession | null = null;
+let listener: ((session: AuthSession | null) => void) | undefined;
+
+export interface TokenResponse extends AuthSession {
+  access_token: string;
+  token_type: 'bearer';
+  expires_in: number;
 }
 
-function isSessionPayload(value: unknown): value is MockSessionPayload {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'userId' in value &&
-    typeof (value as MockSessionPayload).userId === 'string' &&
-    (value as MockSessionPayload).userId.length > 0
-  );
+export const getAccessToken = () => accessToken;
+export const getSession = () => currentSession;
+export function subscribeSession(callback: (session: AuthSession | null) => void) {
+  listener = callback;
 }
-
-export function readSession(): MockSessionPayload | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-
-    const parsed: unknown = JSON.parse(raw);
-    if (!isSessionPayload(parsed)) {
-      localStorage.removeItem(SESSION_KEY);
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    localStorage.removeItem(SESSION_KEY);
-    return null;
-  }
+export function applySession(payload: TokenResponse): AuthSession {
+  accessToken = payload.access_token;
+  return updateSession(payload);
 }
-
-export function writeSession(userId: string): void {
-  const payload: MockSessionPayload = { userId };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+export function updateSession(payload: AuthSession): AuthSession {
+  // Strip token fields before they reach Redux or application components.
+  currentSession = { user: payload.user, role: payload.role, permissions: payload.permissions };
+  listener?.(currentSession);
+  return currentSession;
 }
-
 export function clearSession(): void {
-  localStorage.removeItem(SESSION_KEY);
+  accessToken = null;
+  currentSession = null;
+  try {
+    localStorage.removeItem('stayops.mock.session');
+  } catch {
+    /* Storage may be disabled. */
+  }
+  listener?.(null);
 }

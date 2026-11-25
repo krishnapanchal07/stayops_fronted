@@ -1,4 +1,9 @@
-import { SupportCategory, type ChangePasswordValues, type SupportFormValues, type TenantProfileFormValues } from '@/types/support';
+import {
+  SupportCategory,
+  type ChangePasswordValues,
+  type SupportFormValues,
+  type TenantProfileFormValues,
+} from '@/types/support';
 import type { Tenant } from '@/types/tenant';
 
 export type SupportFormErrors = Partial<Record<keyof SupportFormValues, string>>;
@@ -13,7 +18,8 @@ export function emptySupportForm(): SupportFormValues {
 
 export function validateSupportForm(values: SupportFormValues): SupportFormErrors {
   const errors: SupportFormErrors = {};
-  if (!values.category || !(values.category in SupportCategory)) errors.category = 'Select a category.';
+  if (!values.category || !(values.category in SupportCategory))
+    errors.category = 'Select a category.';
   if (!values.subject.trim()) errors.subject = 'Subject is required.';
   if (!values.description.trim()) errors.description = 'Describe the issue.';
   return errors;
@@ -55,7 +61,9 @@ export function emptyTenantProfileForm(): TenantProfileFormValues {
   };
 }
 
-export function validateTenantProfileForm(values: TenantProfileFormValues): TenantProfileFormErrors {
+export function validateTenantProfileForm(
+  values: TenantProfileFormValues,
+): TenantProfileFormErrors {
   const errors: TenantProfileFormErrors = {};
   const phone = values.phone.replace(/\D/g, '');
   if (!phone) errors.phone = 'Phone is required.';
@@ -67,10 +75,12 @@ export function validateTenantProfileForm(values: TenantProfileFormValues): Tena
   if (!values.postalCode.trim()) errors.postalCode = 'Postal code is required.';
 
   if (!values.emergencyName.trim()) errors.emergencyName = 'Emergency contact name is required.';
-  if (!values.emergencyRelationship.trim()) errors.emergencyRelationship = 'Relationship is required.';
+  if (!values.emergencyRelationship.trim())
+    errors.emergencyRelationship = 'Relationship is required.';
   const emergencyPhone = values.emergencyPhone.replace(/\D/g, '');
   if (!emergencyPhone) errors.emergencyPhone = 'Emergency phone is required.';
-  else if (emergencyPhone.length !== 10) errors.emergencyPhone = 'Enter a 10-digit emergency phone number.';
+  else if (emergencyPhone.length !== 10)
+    errors.emergencyPhone = 'Enter a 10-digit emergency phone number.';
   if (values.emergencyEmail && !EMAIL_PATTERN.test(values.emergencyEmail.trim())) {
     errors.emergencyEmail = 'Enter a valid emergency email.';
   }
@@ -81,10 +91,22 @@ export function validateChangePassword(values: ChangePasswordValues): ChangePass
   const errors: ChangePasswordErrors = {};
   if (!values.currentPassword) errors.currentPassword = 'Current password is required.';
   if (!values.newPassword) errors.newPassword = 'New password is required.';
-  else if (values.newPassword.length < 8) errors.newPassword = 'Use at least 8 characters.';
+  else if (
+    values.newPassword.length < 12 ||
+    values.newPassword.length > 128 ||
+    !/[a-z]/i.test(values.newPassword) ||
+    !/\d/.test(values.newPassword)
+  ) {
+    errors.newPassword = 'Use 12-128 characters including a letter and a number.';
+  }
   if (!values.confirmPassword) errors.confirmPassword = 'Confirm the new password.';
-  else if (values.newPassword !== values.confirmPassword) errors.confirmPassword = 'Passwords do not match.';
-  if (values.currentPassword && values.newPassword && values.currentPassword === values.newPassword) {
+  else if (values.newPassword !== values.confirmPassword)
+    errors.confirmPassword = 'Passwords do not match.';
+  if (
+    values.currentPassword &&
+    values.newPassword &&
+    values.currentPassword === values.newPassword
+  ) {
     errors.newPassword = 'New password must be different from the current password.';
   }
   return errors;

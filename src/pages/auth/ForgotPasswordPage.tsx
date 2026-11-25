@@ -2,6 +2,7 @@ import { TextInput } from '@/components/forms/TextInput';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/hooks/useToast';
 import { PATHS } from '@/routes/paths';
+import { authService, authErrorMessage } from '@/services/auth/authService';
 import { Mail } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -10,15 +11,24 @@ export function ForgotPasswordPage() {
   const toast = useToast();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!email.trim()) {
       setError('Email is required.');
       return;
     }
     setError('');
-    toast('info', 'Reset email is not connected yet', 'SMTP and recovery tokens belong to later phases.');
+    setLoading(true);
+    try {
+      const message = await authService.forgotPassword(email);
+      toast('info', 'Password reset requested', message);
+    } catch (error) {
+      setError(authErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,8 +48,8 @@ export function ForgotPasswordPage() {
           leftIcon={<Mail className="h-4 w-4" />}
           required
         />
-        <Button type="submit" fullWidth>
-          Send reset link
+        <Button type="submit" fullWidth disabled={loading}>
+          {loading ? 'Sending...' : 'Send reset link'}
         </Button>
       </form>
 

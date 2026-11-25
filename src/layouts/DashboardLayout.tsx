@@ -6,6 +6,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { PATHS } from '@/routes/paths';
+import { logoutUser } from '@/store/slices/authSlice';
 import { setMobileNavOpen } from '@/store/slices/uiSlice';
 import { cn } from '@/utils/cn';
 import { useEffect } from 'react';
@@ -24,7 +25,15 @@ export function DashboardLayout() {
   }, [dispatch, location.pathname]);
 
   const handleLogout = async () => {
-    await logout();
+    const result = await logout();
+    if (logoutUser.rejected.match(result)) {
+      toast(
+        'error',
+        'Unable to sign out',
+        result.error.message ?? 'Check your connection and try again.',
+      );
+      return;
+    }
     dispatch(setMobileNavOpen(false));
     toast('success', 'You have been logged out');
     navigate(PATHS.login, { replace: true });

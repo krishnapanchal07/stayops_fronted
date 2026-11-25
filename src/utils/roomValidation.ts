@@ -25,8 +25,8 @@ export function emptyRoomForm(): RoomFormValues {
     roomType: 'STANDARD',
     sharingType: '2_SHARING',
     capacity: 2,
-    monthlyRent: 8000,
-    securityDeposit: 8000,
+    monthlyRent: 0,
+    securityDeposit: 0,
     amenities: [],
     description: '',
     status: RoomStatus.AVAILABLE,
@@ -47,7 +47,7 @@ export function toRoomFormValues(room: Room): RoomFormValues {
     securityDeposit: room.securityDeposit,
     amenities: [...room.amenities],
     description: room.description,
-    status: room.status,
+    status: room.status === 'MAINTENANCE' || room.status === 'BLOCKED' ? room.status : RoomStatus.AVAILABLE,
     images: normalizeRoomImages(room.images),
   };
 }

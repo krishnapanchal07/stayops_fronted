@@ -1,3 +1,5 @@
+> Frontend test cleanup: the temporary Node test scripts, custom TypeScript/VM loader, npm test commands, and their backend Node integration runner were removed at the user's request. Earlier test results and implementation file lists below are historical; those frontend tests are no longer retained.
+
 # Public PG discovery — Part 2
 
 The public `/find-room` route now has a dedicated property discovery experience.
@@ -173,7 +175,6 @@ Commands:
 npm run build
 npm run lint
 npm run lint:oxlint
-npm run test:discovery
 ```
 
 Build includes TypeScript validation. ESLint and oxlint retain the three existing

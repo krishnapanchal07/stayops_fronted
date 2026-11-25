@@ -5,7 +5,7 @@ export type UserStatus = 'ACTIVE' | 'INACTIVE';
 
 /**
  * Public user shape used by the UI and Redux.
- * Passwords never appear here. Credentials live only in mock/credentials.json.
+ * Passwords and tokens never appear here. Authentication comes from the API.
  *
  * propertyIds prepares Phase 3 data scoping (a tenant only sees their own records).
  */

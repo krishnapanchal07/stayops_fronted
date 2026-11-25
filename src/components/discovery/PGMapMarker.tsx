@@ -32,7 +32,7 @@ export const PGMapMarker = memo(function PGMapMarker({
     const create = (active: boolean, small = false) =>
       divIcon({
         className: `stayops-price-marker${active ? ' is-highlighted' : ''}${small ? ' is-compact' : ''}`,
-        html: `<span>${formatINR(pg.startingRent)}</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M0 0h12L6 8z"/></svg>`,
+        html: `<span>${(Number.isFinite(pg.startingRent) ? formatINR(pg.startingRent) : 'Rooms coming soon')}</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M0 0h12L6 8z"/></svg>`,
         iconSize: small ? [44, 44] : [86, 38],
         iconAnchor: small ? [22, 22] : [43, 38],
         tooltipAnchor: [0, -40],
@@ -67,7 +67,7 @@ export const PGMapMarker = memo(function PGMapMarker({
     element.setAttribute('role', 'link');
     element.setAttribute(
       'aria-label',
-      `View ${pg.name}, from ${formatINR(pg.startingRent)} per bed per month. Approximate demo location.`,
+      `View ${pg.name}, from ${(Number.isFinite(pg.startingRent) ? formatINR(pg.startingRent) : 'Rooms coming soon')} per bed per month. Property location.`,
     );
     element.addEventListener('focus', focus);
     element.addEventListener('blur', blur);
@@ -93,9 +93,9 @@ export const PGMapMarker = memo(function PGMapMarker({
       <Tooltip direction="top" opacity={1}>
         {pg.name}
         <br />
-        From {formatINR(pg.startingRent)} / bed / month
+        From {(Number.isFinite(pg.startingRent) ? formatINR(pg.startingRent) : 'Rooms coming soon')} / bed / month
         <br />
-        {pg.city} · approximate locality
+        {pg.city} · property location
       </Tooltip>
     </Marker>
   );

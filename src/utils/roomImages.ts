@@ -1,6 +1,6 @@
 import type { RoomImage } from '@/types/room';
 
-export const ROOM_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const ROOM_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
 export const ROOM_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
 const PLACEHOLDER_TONES = ['primary', 'info', 'success', 'warning'] as const;
@@ -40,6 +40,7 @@ type RoomImageInput = Partial<RoomImage> & Pick<Partial<RoomImage>, 'id'>;
 export function normalizeRoomImages(images: RoomImageInput[] | undefined): RoomImage[] {
   return ensureSinglePrimary(
     (images ?? []).map((image, index) => ({
+      ...image,
       id: image.id || createImageId(),
       url: image.url ?? '',
       alt: image.alt ?? image.label ?? `Room image ${index + 1}`,
@@ -52,19 +53,17 @@ export function normalizeRoomImages(images: RoomImageInput[] | undefined): RoomI
 }
 
 function isSupportedImageType(file: File): boolean {
-  if (ROOM_IMAGE_TYPES.includes(file.type as (typeof ROOM_IMAGE_TYPES)[number])) {
-    return true;
-  }
-  const extension = file.name.split('.').pop()?.toLowerCase();
-  return extension === 'jpg' || extension === 'jpeg' || extension === 'png' || extension === 'webp';
+  return ROOM_IMAGE_TYPES.includes(file.type as (typeof ROOM_IMAGE_TYPES)[number]) && /\.(jpe?g|png|webp)$/i.test(file.name);
 }
 
 export function validateRoomImageFile(file: File, existing: RoomImage[]): string | null {
+  if (!file.size) return 'Empty image file.';
+  if (existing.length >= 12) return 'Maximum 12 images per room.';
   if (!isSupportedImageType(file)) {
     return 'Use a JPG, PNG, or WEBP image.';
   }
-  if (file.size > ROOM_IMAGE_MAX_BYTES) {
-    return 'Keep each image under 5 MB.';
+  if (file.size >= ROOM_IMAGE_MAX_BYTES) {
+    return 'Each image must be less than 4 MiB.';
   }
   if (existing.some((image) => imageKey(image) === file.name.trim().toLowerCase())) {
     return 'This image is already added.';
@@ -75,6 +74,7 @@ export function validateRoomImageFile(file: File, existing: RoomImage[]): string
 export function createRoomImageFromFile(file: File, sortOrder: number, isPrimary: boolean): RoomImage {
   return {
     id: createImageId(),
+    file,
     url: URL.createObjectURL(file),
     alt: file.name,
     label: file.name.replace(/\.[^.]+$/, ''),

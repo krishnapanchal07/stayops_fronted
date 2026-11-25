@@ -72,7 +72,7 @@ function summarizeUnits(buildings: PropertyBuilding[]): PropertyTotals {
     totalRooms,
     totalBeds,
     occupiedBeds,
-    availableBeds: Math.max(0, totalBeds - occupiedBeds),
+    availableBeds: floors.reduce((sum,floor)=>sum+(floor.availableBeds ?? 0),0),
     occupancyPercent: totalBeds === 0 ? 0 : Math.round((occupiedBeds / totalBeds) * 100),
   };
 }

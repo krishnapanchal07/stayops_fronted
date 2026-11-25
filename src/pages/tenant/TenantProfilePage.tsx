@@ -3,6 +3,7 @@ import { Card, CardHeader } from '@/components/common/Card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { StatusPill } from '@/components/dashboard/StatusPill';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
+import { EmptyState } from '@/components/feedback/EmptyState';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm';
 import { NotificationPreferencesForm } from '@/components/profile/NotificationPreferencesForm';
@@ -40,8 +41,13 @@ export function TenantProfilePage() {
 
   const loader = useCallback(async () => {
     if (!tenantId) throw new Error('Profile information unavailable.');
+    const token = new URLSearchParams(window.location.hash.slice(1)).get('tenant-link');
+    if (token) {
+      await tenantService.acceptInvitation(token);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
     const [tenant, preferences] = await Promise.all([
-      tenantService.getTenantById(tenantId),
+      tenantService.getMyTenant(),
       profileService.getNotificationPreferences(tenantId),
     ]);
     return { tenant, preferences };
@@ -56,7 +62,7 @@ export function TenantProfilePage() {
   const [saving, setSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
 
-  const values = formValues ?? (data ? toTenantProfileForm(data.tenant) : null);
+  const values = formValues ?? (data?.tenant ? toTenantProfileForm(data.tenant) : null);
   const prefs = preferences ?? data?.preferences ?? null;
 
   const saveProfile = async () => {
@@ -115,7 +121,8 @@ export function TenantProfilePage() {
         <ErrorState title="Profile information unavailable." description={error ?? undefined} onRetry={reload} />
       ) : null}
 
-      {status === 'success' && data && values && prefs ? (
+      {status === 'success' && data && !data.tenant ? <EmptyState title="Your tenant profile is not linked yet" description="Contact management for an account invitation, then open the link sent to your email." /> : null}
+      {status === 'success' && data?.tenant && values && prefs ? (
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-5 lg:col-span-2">
             <Card>

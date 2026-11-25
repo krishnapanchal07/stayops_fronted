@@ -1,3 +1,5 @@
+import { InventoryHierarchy } from '@/components/properties/InventoryHierarchy';
+import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { Card, CardHeader } from '@/components/common/Card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ActivityList } from '@/components/dashboard/ActivityList';
@@ -16,7 +18,6 @@ import { useHasPermission } from '@/hooks/useHasPermission';
 import { useToast } from '@/hooks/useToast';
 import { PATHS, buildingDetailPath } from '@/routes/paths';
 import { propertyService } from '@/services/property/propertyService';
-import { roomService } from '@/services/room/roomService';
 import {
   PROPERTY_STATUS_LABELS,
   PROPERTY_TYPE_LABELS,
@@ -25,9 +26,8 @@ import {
 import { formatINR, formatPhone } from '@/utils/format';
 import { buildingTotals } from '@/utils/propertyStats';
 import { toPropertyFormValues } from '@/utils/propertyValidation';
-import { summarizeRooms } from '@/utils/roomStats';
 import { Pencil } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 export function PropertyDetailsPage() {
@@ -35,10 +35,8 @@ export function PropertyDetailsPage() {
   const toast = useToast();
   const canEdit = useHasPermission(Permission.PROPERTY_EDIT);
   const loader = useCallback(() => propertyService.getPropertyById(propertyId), [propertyId]);
-  const roomsLoader = useCallback(() => roomService.getRoomsByProperty(propertyId), [propertyId]);
   const { data: property, status, error, reload } = useAsyncResource(loader);
-  const { data: rooms } = useAsyncResource(roomsLoader);
-  const inventory = useMemo(() => (rooms ? summarizeRooms(rooms) : null), [rooms]);
+  const inventory = property;
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -91,6 +89,10 @@ export function PropertyDetailsPage() {
           />
 
           <div className="space-y-5">
+            {canEdit && <InventoryHierarchy propertyId={property.id} buildings={property.buildings} onSaved={reload} />}
+            {property.isDemo && <p className="rounded-xl bg-warning-soft p-3">DEMO — fictional accommodation for development, not a real public listing.</p>}
+            <PropertyGallery propertyId={property.id} images={property.images ?? []} editable={canEdit} onChange={reload} />
+            {canEdit && property.status !== 'ARCHIVED' && <Button variant="danger" disabled={saving} onClick={async () => { setSaving(true); try { await propertyService.archive(property.id); reload(); } catch (cause) { toast('error',cause instanceof Error ? cause.message : 'Archive failed.'); } finally {setSaving(false);} }}>Archive property</Button>}
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <StatCard
                 metric={{
@@ -195,15 +197,12 @@ export function PropertyDetailsPage() {
               {property.buildings.length === 0 ? (
                 <EmptyState
                   title="No buildings yet"
-                  description="Building and floor structure will expand in the next phase."
+                  description="Use Add Building above to create the property structure."
                 />
               ) : (
                 <ul className="grid gap-4 lg:grid-cols-2">
                   {property.buildings.map((building) => {
-                    const roomTotals = rooms
-                      ? summarizeRooms(rooms.filter((room) => room.buildingId === building.id))
-                      : null;
-                    const totals = roomTotals ?? buildingTotals(building);
+                    const totals = buildingTotals(building);
                     return (
                       <li key={building.id} className="rounded-2xl border border-border bg-background p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -239,8 +238,8 @@ export function PropertyDetailsPage() {
           <Modal
             open={formOpen}
             title="Edit Property"
-            onClose={() => setFormOpen(false)}
-            className="max-w-2xl"
+            onClose={() => {if (!saving) setFormOpen(false);}}
+            className="max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
           >
             <PropertyForm
               key={property.id}

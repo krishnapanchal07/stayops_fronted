@@ -13,12 +13,12 @@ import { RoomScene } from './RoomScene';
 async function loadFeatured() {
   const [listings, properties] = await Promise.all([
     roomService.listAvailableListings(emptyFindRoomFilters()),
-    propertyService.getProperties(),
+    propertyService.getPublicProperties(),
   ]);
   const seen = new Set<string>();
   return listings
     .filter((listing) => {
-      if (seen.has(listing.propertyId)) return false;
+      if (!properties.some(p => p.id === listing.propertyId) || seen.has(listing.propertyId)) return false;
       seen.add(listing.propertyId);
       return true;
     })

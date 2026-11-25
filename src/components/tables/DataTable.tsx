@@ -9,6 +9,8 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 interface DataTableProps<T> {
+  serverPagination?: { page: number; pageSize: number; total: number; onPageChange: (page: number) => void };
+  serverSorting?: { id: string; direction: SortDirection; onSort: (id: string, direction: SortDirection) => void };
   columns: DataTableColumn<T>[];
   data: T[];
   rowKey: (row: T) => string;
@@ -34,6 +36,8 @@ function compareValues(left: unknown, right: unknown): number {
 }
 
 export function DataTable<T>({
+  serverPagination,
+  serverSorting,
   columns,
   data,
   rowKey,
@@ -50,8 +54,10 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [sortId, setSortId] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [localSortId, setSortId] = useState<string | null>(null);
+  const [localSortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const sortId = serverSorting?.id ?? localSortId;
+  const sortDirection = serverSorting?.direction ?? localSortDirection;
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -70,7 +76,7 @@ export function DataTable<T>({
   }, [columns, data, query, searchFilter]);
 
   const sorted = useMemo(() => {
-    if (!sortId) return filtered;
+    if (serverSorting || !sortId) return filtered;
     const column = columns.find((item) => item.id === sortId);
     if (!column?.accessor) return filtered;
 
@@ -78,15 +84,20 @@ export function DataTable<T>({
       const result = compareValues(a[column.accessor!], b[column.accessor!]);
       return sortDirection === 'asc' ? result : -result;
     });
-  }, [columns, filtered, sortDirection, sortId]);
+  }, [columns, filtered, sortDirection, sortId, serverSorting]);
 
-  const total = sorted.length;
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const currentPage = Math.min(page, pageCount);
-  const pageRows = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const total = serverPagination?.total ?? sorted.length;
+  const effectivePageSize = serverPagination?.pageSize ?? pageSize;
+  const pageCount = Math.max(1, Math.ceil(total / effectivePageSize));
+  const currentPage = Math.min(serverPagination?.page ?? page, pageCount);
+  const pageRows = serverPagination ? sorted : sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const toggleSort = (column: DataTableColumn<T>) => {
     if (!column.sortable) return;
+    if (serverSorting) {
+      serverSorting.onSort(column.id, sortId === column.id && sortDirection === 'asc' ? 'desc' : 'asc');
+      return;
+    }
     if (sortId !== column.id) {
       setSortId(column.id);
       setSortDirection('asc');
@@ -184,9 +195,9 @@ export function DataTable<T>({
       {!isLoading && !isError ? (
         <Pagination
           page={currentPage}
-          pageSize={pageSize}
+          pageSize={effectivePageSize}
           total={total}
-          onPageChange={setPage}
+          onPageChange={serverPagination?.onPageChange ?? setPage}
         />
       ) : null}
     </div>

@@ -1,3 +1,4 @@
+import { BedEditor } from '@/components/rooms/BedEditor';
 import { Card, CardHeader } from '@/components/common/Card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
@@ -55,7 +56,7 @@ export function RoomDetailsPage() {
   const roomLoader = useCallback(() => roomService.getRoomById(roomId), [roomId]);
   const roomsLoader = useCallback(() => roomService.getRooms(), []);
   const propertiesLoader = useCallback(() => propertyService.getProperties(), []);
-  const tenantsLoader = useCallback(() => roomService.getAssignableTenants(), []);
+  const tenantsLoader = useCallback(() => canAllocate ? roomService.getAssignableTenants() : Promise.resolve([]), [canAllocate]);
   const { data: room, status, error, reload } = useAsyncResource(roomLoader);
   const { data: rooms } = useAsyncResource(roomsLoader);
   const { data: properties } = useAsyncResource(propertiesLoader);
@@ -172,6 +173,7 @@ export function RoomDetailsPage() {
                 <StatusPill value={ROOM_STATUS_LABELS[room.status]} />
                 {canEdit ? (
                   <>
+                    <Button variant="danger" onClick={async()=>{try{await roomService.archive(room.id);reload();}catch(cause){toast('error',cause instanceof Error?cause.message:'Unable to archive.');}}}>Archive Room</Button>
                     <Button variant="outline" onClick={() => setStatusOpen(true)}>
                       Change Status
                     </Button>
@@ -300,6 +302,7 @@ export function RoomDetailsPage() {
               <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {room.beds.map((bed) => (
                   <li key={bed.id}>
+                    {canEdit && <BedEditor key={`${bed.id}:${bed.rent}:${bed.status}`} bed={bed} onSaved={reload}/>}
                     <BedCard
                       bed={bed}
                       canAllocate={canAllocate}
@@ -315,12 +318,12 @@ export function RoomDetailsPage() {
                           toast(
                             'info',
                             bed.tenantName ?? 'Tenant',
-                            'This occupancy label is generated inventory, not a managed tenant profile.',
+                            'Unable to load this tenant profile. Refresh and try again.',
                           );
                         }
                       }}
                       onViewReservation={() =>
-                        toast('info', 'Reservation', `${bed.label} is reserved for ${bed.tenantName ?? 'a tenant'}.`)
+                        toast('info', 'Reservation', `${bed.label} is operationally reserved. No booking or tenant is implied.`)
                       }
                       onCancelReservation={() => handleBedStatus(bed, BedStatus.AVAILABLE)}
                       onViewMaintenance={() =>
@@ -340,7 +343,7 @@ export function RoomDetailsPage() {
               <ul className="space-y-2 text-sm text-text-secondary">
                 <li>Maintenance and blocked rooms cannot be allocated.</li>
                 <li>Occupancy is calculated from occupied beds versus room capacity.</li>
-                <li>Releasing a bed immediately makes it available in the mock inventory.</li>
+                <li>Tenant checkout releases the allocation in PostgreSQL.</li>
               </ul>
             </Card>
           </div>
@@ -395,8 +398,8 @@ export function RoomDetailsPage() {
           >
             <p className="typo-secondary">
               {releaseBed
-                ? `Release ${releaseBed.label} from ${releaseBed.tenantName ?? 'this tenant'}? This will make the bed available.`
-                : 'This will make the bed available.'}
+                ? `Release ${releaseBed.label} from ${releaseBed.tenantName ?? 'this tenant'}? This checks out the tenant and makes the bed available.`
+                : 'This checks out the tenant and makes the bed available.'}
             </p>
           </Modal>
         </>

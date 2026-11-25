@@ -1,3 +1,4 @@
+import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { useCallback, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, BedDouble, Check, ChevronRight, MapPin } from 'lucide-react';
@@ -5,7 +6,8 @@ import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { propertyService } from '@/services/property/propertyService';
 import { roomService } from '@/services/room/roomService';
 import { aggregatePublicPGs } from '@/utils/pgDiscovery';
-import { emptyFindRoomFilters } from '@/utils/roomListing';
+import { toAvailableListings } from '@/utils/roomListing';
+import { workflowRequest } from '@/services/http/workflows';
 import { PROPERTY_TYPE_LABELS, PropertyStatus } from '@/types/property';
 import { ROOM_TYPE_LABELS, SHARING_TYPE_LABELS } from '@/types/room';
 import type { DiscoveryRoom } from '@/types/discovery';
@@ -87,19 +89,18 @@ export default function PublicPGDetailsPage() {
 }
 
 function PublicPGDetails({ propertyId }: { propertyId: string }) {
+  const [page, setPage] = useState(1);
   const loader = useCallback(async () => {
-    const property = await propertyService.getPropertyById(propertyId);
-    if (property.status !== PropertyStatus.ACTIVE) return { property: null, pg: null };
-    const beds = await roomService.listAvailableListings({ ...emptyFindRoomFilters(), propertyId });
-    return { property, pg: aggregatePublicPGs([property], beds)[0] ?? null };
-  }, [propertyId]);
+    const [property, rooms, discovery] = await Promise.all([
+      propertyService.getPublicPropertyById(propertyId),
+      roomService.getPublicPage(propertyId,page),
+      workflowRequest<{counts:Record<string,{availableRoomCount:number;availableBedCount:number;startingRent:number}>}>('get',`/public/discovery?propertyId=${encodeURIComponent(propertyId)}`),
+    ]);
+    if (property.status !== PropertyStatus.ACTIVE) return { property: null, pg: null, total:0 };
+    const pg=aggregatePublicPGs([property], toAvailableListings(rooms.items))[0] ?? null;
+    return { property, pg:pg ? {...pg,...discovery.counts[propertyId]} : null, total:rooms.total };
+  }, [propertyId,page]);
   const { data, status, error, reload } = useAsyncResource(loader);
-  // Key pagination by route ID to avoid carrying a later room page to another property.
-  const [pagination, setPagination] = useState({ id: propertyId, page: 1 });
-  const page =
-    pagination.id === propertyId
-      ? Math.max(1, Math.min(pagination.page, Math.ceil((data?.pg?.rooms.length ?? 1) / 6)))
-      : 1;
   if (status === 'loading') return <LoadingSpinner label="Loading property" />;
   if (status === 'error')
     return (
@@ -146,7 +147,9 @@ function PublicPGDetails({ propertyId }: { propertyId: string }) {
         <ArrowLeft size={15} />
         Back to all properties
       </Link>
-      <div className="grid gap-7 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {property.isDemo && <p className="mb-4 rounded-xl bg-warning-soft p-3">DEMO — development accommodation, not a real listing.</p>}
+      <PropertyGallery propertyId={property.id} images={property.images ?? []} editable={false} onChange={reload} />
+      <div className="mt-6 grid gap-7 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div>
           <span className="rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary">
             {PROPERTY_TYPE_LABELS[property.type]}
@@ -184,7 +187,7 @@ function PublicPGDetails({ propertyId }: { propertyId: string }) {
           <div className="mt-4 rounded-2xl border border-border bg-surface p-5">
             <p className="text-xs text-text-secondary">Starting monthly rent per bed</p>
             <p className="mt-1 text-3xl font-bold text-primary">
-              {pg ? formatINR(pg.startingRent) : 'Currently unavailable'}
+              {pg && Number.isFinite(pg.startingRent) ? formatINR(pg.startingRent) : 'Rooms coming soon'}
             </p>
             <p className="mt-3 flex items-center gap-2 text-xs text-text-secondary">
               <BedDouble size={16} />
@@ -193,7 +196,7 @@ function PublicPGDetails({ propertyId }: { propertyId: string }) {
             </p>
             <p className="mt-3 text-[11px] leading-5 text-text-secondary">
               {pg?.location
-                ? 'Map locations are approximate demo locality positions, not verified building coordinates.'
+                ? 'Map positions use property coordinates supplied by the property team.'
                 : 'A map location is not currently available for this property.'}
             </p>
           </div>
@@ -223,7 +226,7 @@ function PublicPGDetails({ propertyId }: { propertyId: string }) {
         ) : (
           <>
             <div className="space-y-4">
-              {pg.rooms.slice((page - 1) * 6, page * 6).map((room) => (
+              {pg.rooms.map((room) => (
                 <AvailableRoom key={room.roomId} room={room} />
               ))}
             </div>
@@ -231,8 +234,8 @@ function PublicPGDetails({ propertyId }: { propertyId: string }) {
               <Pagination
                 page={page}
                 pageSize={6}
-                total={pg.rooms.length}
-                onPageChange={(next) => setPagination({ id: propertyId, page: next })}
+                total={data.total}
+                onPageChange={setPage}
               />
             </div>
           </>

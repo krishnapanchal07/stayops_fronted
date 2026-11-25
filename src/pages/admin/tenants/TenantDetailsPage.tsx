@@ -24,7 +24,6 @@ import {
   wardenInquiryDetailPath,
 } from '@/routes/paths';
 import { propertyService } from '@/services/property/propertyService';
-import { roomService } from '@/services/room/roomService';
 import { tenantService } from '@/services/tenant/tenantService';
 import {
   TENANT_GENDER_LABELS,
@@ -55,25 +54,25 @@ export function TenantDetailsPage() {
   const user = useCurrentUser();
   const isWarden = location.pathname.startsWith('/warden');
   const canEdit = useHasPermission(Permission.TENANT_EDIT);
-  const canAssignRoom = useHasPermission(Permission.ROOM_ALLOCATE) || canEdit;
+  const canAssignRoom = useHasPermission(Permission.ROOM_ALLOCATE);
   const canViewPayments = useHasPermission(Permission.PAYMENT_VIEW);
   const canViewComplaints = useHasPermission(Permission.COMPLAINT_VIEW);
   const canViewVisitors = useHasPermission(Permission.VISITOR_VIEW);
   const canViewLeave = useHasPermission(Permission.LEAVE_VIEW);
   const homeHref = isWarden ? PATHS.warden.dashboard : PATHS.admin.dashboard;
   const listHref = isWarden ? PATHS.warden.tenants : PATHS.admin.tenants;
-  const propertyIds = isWarden ? user?.propertyIds : undefined;
+  const propertyIds = user?.roleId === 'SUPER_ADMIN' ? undefined : user?.propertyIds;
 
   const tenantLoader = useCallback(() => tenantService.getTenantById(tenantId, propertyIds), [propertyIds, tenantId]);
   const tenantsLoader = useCallback(() => tenantService.getTenants(propertyIds), [propertyIds]);
   const propertiesLoader = useCallback(async () => {
     const properties = await propertyService.getProperties();
-    if (!propertyIds?.length) return properties;
+    if (!propertyIds) return properties;
     return properties.filter((property) => propertyIds.includes(property.id));
   }, [propertyIds]);
   const roomsLoader = useCallback(async () => {
-    const rooms = await roomService.getRooms();
-    if (!propertyIds?.length) return rooms;
+    const rooms = await tenantService.getAllocationRooms();
+    if (!propertyIds) return rooms;
     return rooms.filter((room) => propertyIds.includes(room.propertyId));
   }, [propertyIds]);
   const activityLoader = useCallback(() => tenantService.getTenantActivity(tenantId, propertyIds), [propertyIds, tenantId]);
@@ -99,6 +98,7 @@ export function TenantDetailsPage() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [pendingValues, setPendingValues] = useState<TenantFormValues | null>(null);
 
   const commitSave = async (values: TenantFormValues) => {
@@ -158,6 +158,7 @@ export function TenantDetailsPage() {
 
       {status === 'success' && tenant ? (
         <>
+          <p className="typo-helper mb-4">Tenant profiles and allocations are persistent. Payments, complaints, visitors, leave and document storage are not connected to these profiles yet.</p>
           <PageHeader
             title={tenant.fullName}
             description={tenant.tenantCode}
@@ -171,6 +172,16 @@ export function TenantDetailsPage() {
                 <StatusPill value={TENANT_STATUS_LABELS[tenant.status]} />
                 {canEdit ? (
                   <>
+                    {user?.roleId === 'SUPER_ADMIN' ? <Button variant="outline" disabled={inviting} onClick={async () => {
+                      if (inviting) return;
+                      setInviting(true);
+                      try {
+                        const result = await tenantService.inviteTenant(tenant.id);
+                        toast('success', result.message);
+                      } catch (cause) {
+                        toast('error', cause instanceof Error ? cause.message : 'Unable to send invitation.');
+                      } finally { setInviting(false); }
+                    }}>{inviting ? 'Sending…' : 'Send account invitation'}</Button> : null}
                     <Button variant="outline" onClick={() => setStatusOpen(true)}>
                       Change Status
                     </Button>
@@ -321,10 +332,10 @@ export function TenantDetailsPage() {
                   }
                 />
                 <dl className="grid gap-4 sm:grid-cols-2">
-                  <InfoRow label="Monthly rent" value={formatINR(payments?.monthlyRent ?? 0)} />
-                  <InfoRow label="Paid this month" value={formatINR(payments?.paidThisMonth ?? 0)} />
-                  <InfoRow label="Outstanding" value={formatINR(payments?.outstanding ?? 0)} />
-                  <InfoRow label="Security deposit" value={formatINR(payments?.securityDeposit ?? 0)} />
+                  <InfoRow label="Monthly rent" value={formatINR(tenant.roomRent ?? 0)} />
+                  <InfoRow label="Paid this month" value={payments ? formatINR(payments.paidThisMonth) : 'Unavailable'} />
+                  <InfoRow label="Outstanding" value={payments ? formatINR(payments.outstanding) : 'Unavailable'} />
+                  <InfoRow label="Security deposit" value={formatINR(tenant.securityDeposit ?? 0)} />
                 </dl>
               </Card>
 
@@ -344,8 +355,8 @@ export function TenantDetailsPage() {
                   }
                 />
                 <dl className="grid gap-4 sm:grid-cols-2">
-                  <InfoRow label="Open complaints" value={String(complaints?.open ?? 0)} />
-                  <InfoRow label="Resolved complaints" value={String(complaints?.resolved ?? 0)} />
+                  <InfoRow label="Open complaints" value={complaints ? String(complaints.open) : 'Unavailable'} />
+                  <InfoRow label="Resolved complaints" value={complaints ? String(complaints.resolved) : 'Unavailable'} />
                   <InfoRow label="Last complaint" value={complaints?.lastComplaint ?? '—'} />
                 </dl>
               </Card>
@@ -368,8 +379,8 @@ export function TenantDetailsPage() {
                   }
                 />
                 <dl className="grid gap-4 sm:grid-cols-2">
-                  <InfoRow label="Total visitors" value={String(visitors?.total ?? 0)} />
-                  <InfoRow label="Upcoming visitors" value={String(visitors?.upcoming ?? 0)} />
+                  <InfoRow label="Total visitors" value={visitors ? String(visitors.total) : 'Unavailable'} />
+                  <InfoRow label="Upcoming visitors" value={visitors ? String(visitors.upcoming) : 'Unavailable'} />
                   <InfoRow label="Last visit" value={visitors?.lastVisit ?? '—'} />
                 </dl>
               </Card>
@@ -390,8 +401,8 @@ export function TenantDetailsPage() {
                   }
                 />
                 <dl className="grid gap-4 sm:grid-cols-2">
-                  <InfoRow label="Pending requests" value={String(leave?.pending ?? 0)} />
-                  <InfoRow label="Approved requests" value={String(leave?.approved ?? 0)} />
+                  <InfoRow label="Pending requests" value={leave ? String(leave.pending) : 'Unavailable'} />
+                  <InfoRow label="Approved requests" value={leave ? String(leave.approved) : 'Unavailable'} />
                   <InfoRow label="Last leave" value={leave?.lastLeave ?? '—'} />
                 </dl>
               </Card>
@@ -410,6 +421,7 @@ export function TenantDetailsPage() {
 
             <Card>
               <CardHeader title="Documents" />
+                <p className="typo-helper">Document storage is not connected yet.</p>
               {documents && documents.length > 0 ? (
                 <ul className="space-y-3">
                   {documents.map((document) => (
@@ -482,7 +494,7 @@ export function TenantDetailsPage() {
             onSubmit={handleStatusChange}
           />
 
-          <TenantCheckoutModal open={checkoutOpen} tenant={tenant} onClose={() => setCheckoutOpen(false)} />
+          <TenantCheckoutModal key={tenant.id + String(checkoutOpen)} open={checkoutOpen} tenant={tenant} onClose={() => setCheckoutOpen(false)} onComplete={() => { reload(); reloadRooms(); }} />
         </>
       ) : null}
     </div>

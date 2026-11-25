@@ -1,4 +1,5 @@
 export const PropertyStatus = {
+  ARCHIVED: 'ARCHIVED',
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',
   MAINTENANCE: 'MAINTENANCE',
@@ -15,6 +16,7 @@ export const PropertyType = {
 export type PropertyType = (typeof PropertyType)[keyof typeof PropertyType];
 
 export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = {
+  ARCHIVED: 'Archived',
   ACTIVE: 'Active',
   INACTIVE: 'Inactive',
   MAINTENANCE: 'Maintenance',
@@ -42,6 +44,7 @@ export const PROPERTY_AMENITIES = [
 export type PropertyAmenity = (typeof PROPERTY_AMENITIES)[number];
 
 export interface PropertyFloor {
+  buildingId?: string; floorNumber?: number; status?: string; description?: string; availableBeds?: number;
   id: string;
   name: string;
   roomCount: number;
@@ -50,6 +53,7 @@ export interface PropertyFloor {
 }
 
 export interface PropertyBuilding {
+  propertyId?: string; buildingCode?: string; description?: string; status?: string;
   id: string;
   name: string;
   floors: PropertyFloor[];
@@ -62,7 +66,23 @@ export interface PropertyActivityItem {
   time: string;
 }
 
-export interface Property {
+export interface PropertyImage {
+  id: string; filename: string; thumbnail: string; medium: string; large: string;
+  width: number; height: number; isCover: boolean; displayOrder: number;
+  variants: Record<string, {width:number;height:number;bytes:number}>;
+}
+export interface PropertyMetadata {
+  ownerUserId?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  locality?: string;
+  country?: string;
+  isPublic?: boolean;
+  isDemo?: boolean;
+}
+export interface Property extends PropertyMetadata {
+  images?: PropertyImage[];
+  coverImage?: PropertyImage | null;
   id: string;
   name: string;
   type: PropertyType;
@@ -80,7 +100,7 @@ export interface Property {
   recentActivity: PropertyActivityItem[];
 }
 
-export interface PropertyFormValues {
+export interface PropertyFormValues extends PropertyMetadata {
   name: string;
   type: PropertyType;
   address: string;

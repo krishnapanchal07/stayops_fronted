@@ -5,8 +5,8 @@ import type { RoomImage } from '@/types/room';
 export interface DiscoveryLocation {
   latitude: number;
   longitude: number;
-  precision: 'approximate-locality';
-  source: 'demo-fixture';
+  precision: 'approximate-locality' | 'property';
+  source: 'demo-fixture' | 'database';
 }
 
 export interface DiscoveryBounds {

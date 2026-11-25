@@ -12,7 +12,7 @@ import {
   sortRoomImages,
 } from '@/utils/roomImages';
 import { ChevronLeft, ChevronRight, ImagePlus, Trash2 } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface RoomImageManagerProps {
   images: RoomImage[];
@@ -31,6 +31,9 @@ export function RoomImageManager({ images, onChange, disabled = false }: RoomIma
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const ordered = sortRoomImages(images);
+  const previews = useRef<RoomImage[]>([]);
+  useEffect(() => { previews.current = images; }, [images]);
+  useEffect(() => () => { previews.current.forEach(i => { if(i.url.startsWith('blob:')) URL.revokeObjectURL(i.url); }); }, []);
 
   const handleFiles = (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
@@ -54,7 +57,7 @@ export function RoomImageManager({ images, onChange, disabled = false }: RoomIma
     <fieldset className="min-w-0">
       <legend className="typo-label mb-3">Room Images</legend>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="typo-helper">JPG, PNG, or WEBP. Up to 5 MB each. Images are optional.</p>
+        <p className="typo-helper">JPG, PNG, or WEBP. Strictly below 4 MiB each. Maximum 12 images. Images are optional.</p>
         <Button
           type="button"
           size="sm"

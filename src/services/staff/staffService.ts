@@ -1,123 +1,45 @@
-import { propertyService } from '@/services/property/propertyService';
-import { staffStore } from '@/services/staff/staffStore';
+import { workflowList, workflowRequest } from '@/services/http/workflows';
 import { StaffStatus, type Staff, type StaffFilters, type StaffFormValues, type StaffSummary } from '@/types/staff';
-import { filterStaff, summarizeStaff } from '@/utils/staffValidation';
 
-function wait<T>(value: T, ms = 140): Promise<T> {
-  return new Promise((resolve) => {
-    window.setTimeout(() => resolve(value), ms);
-  });
+export interface StaffPage { items: Staff[]; total: number; offset: number; limit: number }
+export interface StaffAccountCandidate { id: string; name: string; email: string; role: Staff['role'] }
+export interface StaffPageOptions { offset?: number; limit?: number; sortBy?: string; sortDirection?: 'asc' | 'desc' }
+function parameters(filters?: Partial<StaffFilters>, options?: StaffPageOptions) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries({ ...filters, ...options })) {
+    if (value !== '' && value !== undefined) params.set(key, String(value));
+  }
+  return params.toString();
 }
-
-async function withPropertyNames(record: Staff): Promise<Staff> {
-  const properties = await propertyService.getProperties();
-  const names = record.propertyIds
-    .map((id) => properties.find((property) => property.id === id)?.name)
-    .filter((name): name is string => Boolean(name));
-  return { ...record, propertyNames: names };
+function normalized(values: StaffFormValues) {
+  return { ...values, email: values.email.trim().toLowerCase(), phone: values.phone.replace(/\D/g, ''),
+    emergencyPhone: values.emergencyPhone.replace(/\D/g, '') };
 }
-
-function nextEmployeeCode(existing: Staff[]): string {
-  const numbers = existing
-    .map((item) => Number(item.employeeCode.replace(/\D/g, '')))
-    .filter((value) => Number.isFinite(value));
-  const next = (numbers.length ? Math.max(...numbers) : 1000) + 1;
-  return `STF-${next}`;
-}
-
-function fromForm(values: StaffFormValues, current?: Staff): Staff {
-  const now = new Date().toISOString();
-  return {
-    id: current?.id ?? `staff-${Date.now().toString(36)}`,
-    userId: current?.userId,
-    employeeCode: current?.employeeCode ?? nextEmployeeCode(staffStore.list()),
-    firstName: values.firstName.trim(),
-    lastName: values.lastName.trim(),
-    fullName: `${values.firstName.trim()} ${values.lastName.trim()}`.replace(/\s+/g, ' '),
-    email: values.email.trim().toLowerCase(),
-    phone: values.phone.replace(/\D/g, '').slice(-10),
-    role: values.role as Staff['role'],
-    propertyIds: [...values.propertyIds],
-    propertyNames: current?.propertyNames ?? [],
-    department: values.department as Staff['department'],
-    designation: values.designation.trim(),
-    status: values.status,
-    profileImage: values.profileImage || undefined,
-    joiningDate: values.joiningDate,
-    address: {
-      addressLine1: values.addressLine1.trim(),
-      addressLine2: values.addressLine2.trim() || undefined,
-      city: values.city.trim(),
-      state: values.state.trim(),
-      postalCode: values.postalCode.trim(),
-      country: values.country.trim() || 'India',
-    },
-    emergencyContact: {
-      name: values.emergencyName.trim(),
-      relationship: values.emergencyRelationship.trim(),
-      phone: values.emergencyPhone.trim(),
-    },
-    createdAt: current?.createdAt ?? now,
-    updatedAt: now,
-  };
-}
-
 export const staffService = {
-  async getStaff(): Promise<Staff[]> {
-    const records = await Promise.all(staffStore.list().map((item) => withPropertyNames(item)));
-    return wait(records);
+  getStaff(): Promise<Staff[]> { return workflowList('/staff'); },
+  getStaffPage(filters: Partial<StaffFilters> = {}, options: StaffPageOptions = {}): Promise<StaffPage> {
+    return workflowRequest('get', `/staff?${parameters(filters, options)}`);
   },
-
-  async getStaffById(id: string): Promise<Staff> {
-    const record = staffStore.get(id);
-    if (!record) return Promise.reject(new Error('Staff member not found.'));
-    return wait(await withPropertyNames(record));
+  getStaffById(id: string): Promise<Staff> { return workflowRequest('get', `/staff/${encodeURIComponent(id)}`); },
+  searchStaff(filters: StaffFilters): Promise<Staff[]> { return workflowList(`/staff?${parameters(filters)}`); },
+  getStaffSummary(): Promise<StaffSummary> { return workflowRequest('get', '/staff/summary'); },
+  getAssignableProperties(): Promise<{ id: string; name: string }[]> { return workflowRequest('get', '/staff/properties'); },
+  findExistingAccount(email: string): Promise<StaffAccountCandidate> {
+    return workflowRequest('get', `/staff/account-candidate?${new URLSearchParams({ email: email.trim().toLowerCase() })}`);
   },
-
-  async searchStaff(filters: StaffFilters): Promise<Staff[]> {
-    const records = await this.getStaff();
-    return filterStaff(records, filters);
+  createStaff(values: StaffFormValues): Promise<Staff> { return workflowRequest('post', '/staff', normalized(values)); },
+  updateStaff(id: string, values: StaffFormValues): Promise<Staff> {
+    const payload: Record<string, unknown> = normalized(values);
+    // Identity role/email cannot be changed through generic staff editing.
+    delete payload.email;
+    delete payload.role;
+    delete payload.existingUserId;
+    return workflowRequest('patch', `/staff/${encodeURIComponent(id)}`, payload);
   },
-
-  async getStaffSummary(): Promise<StaffSummary> {
-    const records = staffStore.list();
-    return wait(summarizeStaff(records));
-  },
-
-  async createStaff(values: StaffFormValues): Promise<Staff> {
-    const created = staffStore.insert(fromForm(values));
-    return wait(await withPropertyNames(created));
-  },
-
-  async updateStaff(id: string, values: StaffFormValues): Promise<Staff> {
-    const current = staffStore.get(id);
-    if (!current) return Promise.reject(new Error('Staff member not found.'));
-    const next = fromForm(values, current);
-    if (current.userId) {
-      next.email = current.email;
-      next.role = current.role;
-      next.userId = current.userId;
-    }
-    return wait(await withPropertyNames(staffStore.persist(next)));
-  },
-
-  async activateStaff(id: string): Promise<Staff> {
-    const current = staffStore.get(id);
-    if (!current) return Promise.reject(new Error('Staff member not found.'));
-    return wait(
-      await withPropertyNames(
-        staffStore.persist({ ...current, status: StaffStatus.ACTIVE, updatedAt: new Date().toISOString() }),
-      ),
-    );
-  },
-
-  async deactivateStaff(id: string): Promise<Staff> {
-    const current = staffStore.get(id);
-    if (!current) return Promise.reject(new Error('Staff member not found.'));
-    return wait(
-      await withPropertyNames(
-        staffStore.persist({ ...current, status: StaffStatus.INACTIVE, updatedAt: new Date().toISOString() }),
-      ),
-    );
-  },
+  changeStaffStatus(id: string, status: StaffStatus): Promise<Staff> { return workflowRequest('patch', `/staff/${encodeURIComponent(id)}/status`, { status }); },
+  activateStaff(id: string): Promise<Staff> { return this.changeStaffStatus(id, StaffStatus.ACTIVE); },
+  deactivateStaff(id: string): Promise<Staff> { return this.changeStaffStatus(id, StaffStatus.INACTIVE); },
+  updateAssignments(id: string, propertyIds: string[]): Promise<Staff> { return workflowRequest('patch', `/staff/${encodeURIComponent(id)}/assignments`, { propertyIds }); },
+  resendInvitation(id: string): Promise<{ message: string }> { return workflowRequest('post', `/staff/${encodeURIComponent(id)}/resend-invite`); },
+  acceptInvitation(token: string): Promise<{ message: string }> { return workflowRequest('post', '/staff/accept-invitation', { token }); },
 };

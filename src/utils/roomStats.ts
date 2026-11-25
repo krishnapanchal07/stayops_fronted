@@ -2,7 +2,6 @@ import {
   BedStatus,
   RoomStatus,
   SharingType,
-  type AssignBedInput,
   type Bed,
   type Room,
   type RoomFilters,
@@ -12,44 +11,12 @@ import {
   type SharingType as SharingTypeValue,
 } from '@/types/room';
 
-const BED_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
-
-export function sharingTypeFromCapacity(capacity: number): SharingTypeValue {
-  if (capacity >= 4) return SharingType.FOUR_SHARING;
-  if (capacity === 3) return SharingType.THREE_SHARING;
-  if (capacity === 2) return SharingType.TWO_SHARING;
-  return SharingType.ONE_SHARING;
-}
 
 export function capacityFromSharing(sharingType: SharingTypeValue): number {
   if (sharingType === SharingType.FOUR_SHARING) return 4;
   if (sharingType === SharingType.THREE_SHARING) return 3;
   if (sharingType === SharingType.TWO_SHARING) return 2;
   return 1;
-}
-
-export function rentForSharing(sharingType: SharingTypeValue): number {
-  if (sharingType === SharingType.FOUR_SHARING) return 5500;
-  if (sharingType === SharingType.THREE_SHARING) return 6500;
-  if (sharingType === SharingType.TWO_SHARING) return 8000;
-  return 10000;
-}
-
-export function createBedsForCapacity(roomId: string, capacity: number, rent: number): Bed[] {
-  return Array.from({ length: capacity }, (_, index) => {
-    const bedNumber = BED_LABELS[index] ?? String(index + 1);
-    return {
-      id: `${roomId}-bed-${bedNumber.toLowerCase()}`,
-      roomId,
-      bedNumber,
-      label: `Bed ${bedNumber}`,
-      status: BedStatus.AVAILABLE,
-      tenantId: null,
-      tenantName: null,
-      rent,
-      moveInDate: null,
-    };
-  });
 }
 
 export function calculateRoomOccupancy(room: Pick<Room, 'beds' | 'capacity'>): RoomOccupancy {
@@ -169,71 +136,6 @@ export function canMarkRoomAvailable(room: Room): string | null {
     return 'This room has no usable beds, so it cannot be marked available.';
   }
   return null;
-}
-
-export function occupiedTenantIds(rooms: Room[]): Set<string> {
-  return new Set(
-    rooms.flatMap((room) =>
-      room.beds
-        .filter((bed) => bed.status === BedStatus.OCCUPIED && bed.tenantId)
-        .map((bed) => bed.tenantId as string),
-    ),
-  );
-}
-
-export function assignBedToRoom(room: Room, bedId: string, input: AssignBedInput): Room {
-  return {
-    ...room,
-    updatedAt: new Date().toISOString().slice(0, 10),
-    beds: room.beds.map((bed) =>
-      bed.id === bedId
-        ? {
-            ...bed,
-            status: BedStatus.OCCUPIED,
-            tenantId: input.tenantId,
-            tenantName: input.tenantName,
-            rent: input.rent,
-            moveInDate: input.moveInDate,
-          }
-        : bed,
-    ),
-  };
-}
-
-export function releaseBedFromRoom(room: Room, bedId: string): Room {
-  return {
-    ...room,
-    updatedAt: new Date().toISOString().slice(0, 10),
-    beds: room.beds.map((bed) =>
-      bed.id === bedId
-        ? {
-            ...bed,
-            status: BedStatus.AVAILABLE,
-            tenantId: null,
-            tenantName: null,
-            moveInDate: null,
-          }
-        : bed,
-    ),
-  };
-}
-
-export function updateBedStatus(room: Room, bedId: string, status: Bed['status']): Room {
-  return {
-    ...room,
-    updatedAt: new Date().toISOString().slice(0, 10),
-    beds: room.beds.map((bed) =>
-      bed.id === bedId
-        ? {
-            ...bed,
-            status,
-            tenantId: status === BedStatus.AVAILABLE ? null : bed.tenantId,
-            tenantName: status === BedStatus.AVAILABLE ? null : bed.tenantName,
-            moveInDate: status === BedStatus.AVAILABLE ? null : bed.moveInDate,
-          }
-        : bed,
-    ),
-  };
 }
 
 export function roomKey(room: Pick<Room, 'propertyId' | 'buildingId' | 'floorId' | 'roomNumber'>): string {
