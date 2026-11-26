@@ -4,40 +4,64 @@ import { TextInput } from '@/components/forms/TextInput';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CHARGE_TYPE_LABELS, ChargeType, type InvoiceFormValues } from '@/types/finance';
-import type { Tenant } from '@/types/tenant';
 import { calculateInvoiceTotal } from '@/utils/financeCalc';
-import { emptyInvoiceForm, validateInvoiceForm, type InvoiceFormErrors } from '@/utils/financeValidation';
+import {
+  emptyInvoiceForm,
+  validateInvoiceForm,
+  type InvoiceFormErrors,
+} from '@/utils/financeValidation';
 import { formatINR } from '@/utils/format';
 import { Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useAsyncResource } from '@/hooks/useAsyncResource';
+import { financeService } from '@/services/finance/financeService';
+import { ErrorState } from '@/components/feedback/ErrorState';
 
 interface InvoiceFormModalProps {
   open: boolean;
-  tenants: Tenant[];
   submitting: boolean;
   initial?: InvoiceFormValues;
   title?: string;
+  selectedTenantLabel?: string;
   onClose: () => void;
   onSubmit: (values: InvoiceFormValues) => Promise<void>;
 }
 
 export function InvoiceFormModal({
   open,
-  tenants,
   submitting,
   initial,
   title = 'Create Invoice',
+  selectedTenantLabel,
   onClose,
   onSubmit,
 }: InvoiceFormModalProps) {
   const [values, setValues] = useState<InvoiceFormValues>(initial ?? emptyInvoiceForm());
   const [errors, setErrors] = useState<InvoiceFormErrors>({});
+  const propertiesLoader = useCallback(
+    () => (open ? financeService.getProperties() : Promise.resolve([])),
+    [open],
+  );
+  const properties = useAsyncResource(propertiesLoader);
+  const tenantKey = `${open}:${values.propertyId ?? ''}`;
+  const tenantLoader = useCallback(
+    async () => ({
+      key: tenantKey,
+      items: open ? await financeService.getTenants(values.propertyId) : [],
+    }),
+    [open, tenantKey, values.propertyId],
+  );
+  const tenantResource = useAsyncResource(tenantLoader);
+  const tenants = tenantResource.data?.key === tenantKey ? tenantResource.data.items : [];
+
   const totals = calculateInvoiceTotal(values.items, values.discount, values.lateFee);
 
   const updateItem = (index: number, patch: Partial<InvoiceFormValues['items'][number]>) => {
     setValues((current) => ({
       ...current,
-      items: current.items.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)),
+      items: current.items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item,
+      ),
     }));
   };
 
@@ -67,27 +91,89 @@ export function InvoiceFormModal({
       }
     >
       <div className="space-y-4">
+        {properties.status === 'error' ? (
+          <ErrorState description={properties.error ?? undefined} onRetry={properties.reload} />
+        ) : null}
+        {tenantResource.status === 'error' ? (
+          <ErrorState
+            description={tenantResource.error ?? undefined}
+            onRetry={tenantResource.reload}
+          />
+        ) : null}
+        <Select
+          label="Property"
+          name="invoiceProperty"
+          value={values.propertyId ?? ''}
+          disabled={Boolean(initial)}
+          options={[
+            { value: '', label: 'All authorized properties' },
+            ...(properties.data ?? []).map((p) => ({ value: p.id, label: p.name })),
+          ]}
+          onChange={(event) =>
+            setValues((current) => ({
+              ...current,
+              propertyId: event.target.value,
+              tenantId: '',
+              items: current.items.map((i) =>
+                i.type === ChargeType.RENT ? { ...i, amount: 0 } : i,
+              ),
+            }))
+          }
+        />
         <Select
           label="Tenant"
           name="tenantId"
           required
+          disabled={
+            Boolean(initial) || !tenantResource.data || tenantResource.data.key !== tenantKey
+          }
           value={values.tenantId}
           error={errors.tenantId}
           options={[
-            { value: '', label: 'Select tenant' },
-            ...tenants.map((tenant) => ({ value: tenant.id, label: `${tenant.fullName} · ${tenant.tenantCode}` })),
+            {
+              value: '',
+              label:
+                tenantResource.data?.key !== tenantKey
+                  ? 'Loading tenants…'
+                  : tenants.length
+                    ? 'Select tenant'
+                    : 'No tenants available',
+            },
+            ...(initial && !tenants.some((t) => t.id === initial.tenantId)
+              ? [
+                  {
+                    value: initial.tenantId,
+                    label: selectedTenantLabel ?? 'Existing invoice tenant',
+                  },
+                ]
+              : []),
+            ...tenants.map((tenant) => ({
+              value: tenant.id,
+              label: `${tenant.fullName} · ${tenant.tenantCode}`,
+            })),
           ]}
-          onChange={(event) => setValues((current) => ({ ...current, tenantId: event.target.value }))}
+          onChange={(event) => {
+            const tenant = tenants.find((t) => t.id === event.target.value);
+            setValues((current) => ({
+              ...current,
+              tenantId: event.target.value,
+              items: current.items.map((i) =>
+                i.type === ChargeType.RENT ? { ...i, amount: tenant?.roomRent ?? 0 } : i,
+              ),
+            }));
+          }}
         />
         <div className="grid gap-4 sm:grid-cols-3">
           <TextInput
             label="Billing month"
-            name="billingPeriod"
+            name="invoiceBillingPeriod"
             type="month"
             required
             value={values.billingPeriod}
             error={errors.billingPeriod}
-            onChange={(event) => setValues((current) => ({ ...current, billingPeriod: event.target.value }))}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, billingPeriod: event.target.value }))
+            }
           />
           <DateInput
             label="Issue date"
@@ -95,7 +181,9 @@ export function InvoiceFormModal({
             required
             value={values.issueDate}
             error={errors.issueDate}
-            onChange={(event) => setValues((current) => ({ ...current, issueDate: event.target.value }))}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, issueDate: event.target.value }))
+            }
           />
           <DateInput
             label="Due date"
@@ -103,7 +191,9 @@ export function InvoiceFormModal({
             required
             value={values.dueDate}
             error={errors.dueDate}
-            onChange={(event) => setValues((current) => ({ ...current, dueDate: event.target.value }))}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, dueDate: event.target.value }))
+            }
           />
         </div>
 
@@ -119,7 +209,12 @@ export function InvoiceFormModal({
                   ...current,
                   items: [
                     ...current.items,
-                    { id: `item-${Date.now().toString(36)}`, type: ChargeType.OTHER, description: '', amount: 0 },
+                    {
+                      id: `item-${Date.now().toString(36)}`,
+                      type: ChargeType.OTHER,
+                      description: '',
+                      amount: 0,
+                    },
                   ],
                 }))
               }
@@ -128,7 +223,10 @@ export function InvoiceFormModal({
             </Button>
           </div>
           {values.items.map((item, index) => (
-            <div key={item.id} className="grid gap-3 rounded-xl border border-border p-3 sm:grid-cols-[1fr_1fr_120px_auto]">
+            <div
+              key={item.id}
+              className="grid gap-3 rounded-xl border border-border p-3 sm:grid-cols-[1fr_1fr_120px_auto]"
+            >
               <Select
                 label="Type"
                 name={`item-type-${item.id}`}
@@ -157,7 +255,10 @@ export function InvoiceFormModal({
                 className="mt-6 inline-flex h-10 w-10 items-center justify-center rounded-xl text-danger hover:bg-danger/10"
                 aria-label="Remove item"
                 onClick={() =>
-                  setValues((current) => ({ ...current, items: current.items.filter((_, itemIndex) => itemIndex !== index) }))
+                  setValues((current) => ({
+                    ...current,
+                    items: current.items.filter((_, itemIndex) => itemIndex !== index),
+                  }))
                 }
               >
                 <Trash2 className="h-4 w-4" />
@@ -175,7 +276,9 @@ export function InvoiceFormModal({
             min={0}
             value={values.discount || ''}
             error={errors.discount}
-            onChange={(event) => setValues((current) => ({ ...current, discount: Number(event.target.value) || 0 }))}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, discount: Number(event.target.value) || 0 }))
+            }
           />
           <TextInput
             label="Late fee"
@@ -184,7 +287,9 @@ export function InvoiceFormModal({
             min={0}
             value={values.lateFee || ''}
             error={errors.lateFee}
-            onChange={(event) => setValues((current) => ({ ...current, lateFee: Number(event.target.value) || 0 }))}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, lateFee: Number(event.target.value) || 0 }))
+            }
           />
         </div>
         <div className="grid grid-cols-2 gap-3 rounded-xl bg-background p-3 text-sm sm:grid-cols-4">

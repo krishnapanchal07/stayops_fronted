@@ -3,7 +3,11 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { StatusPill } from '@/components/dashboard/StatusPill';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { EXPENSE_CATEGORY_LABELS, EXPENSE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/types/finance';
+import {
+  EXPENSE_CATEGORY_LABELS,
+  EXPENSE_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
+} from '@/types/finance';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { expensesListPath, financeHomePath, scopeFromPath } from '@/routes/financePaths';
 import { financeService } from '@/services/finance/financeService';
@@ -33,7 +37,9 @@ export function ExpenseDetailsPage() {
       />
 
       {status === 'loading' ? <DashboardSkeleton /> : null}
-      {status === 'error' ? <ErrorState description={error ?? 'Expense not found.'} onRetry={reload} /> : null}
+      {status === 'error' ? (
+        <ErrorState description={error ?? 'Expense not found.'} onRetry={reload} />
+      ) : null}
 
       {status === 'success' && expense ? (
         <Card>

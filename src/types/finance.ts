@@ -235,6 +235,7 @@ export interface ExpenseFilters {
 }
 
 export interface InvoiceFormValues {
+  propertyId?: string;
   tenantId: string;
   billingPeriod: string;
   issueDate: string;
@@ -267,6 +268,7 @@ export interface ExpenseFormValues {
 }
 
 export interface TenantFinancialSummary {
+  currentMonthPaid: number;
   tenantId: string;
   currentDue: number;
   overdue: number;

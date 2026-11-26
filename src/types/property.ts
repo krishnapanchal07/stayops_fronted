@@ -95,7 +95,7 @@ export interface Property extends PropertyMetadata {
   status: PropertyStatus;
   description: string;
   amenities: string[];
-  monthlyRevenue: number;
+  monthlyRevenue: number | null;
   buildings: PropertyBuilding[];
   recentActivity: PropertyActivityItem[];
 }

@@ -5,14 +5,20 @@
       "label": "Total Properties",
       "value": "12",
       "tone": "primary",
-      "trend": { "label": "+2 this month", "direction": "up" }
+      "trend": {
+        "label": "+2 this month",
+        "direction": "up"
+      }
     },
     {
       "id": "tenants",
       "label": "Total Tenants",
       "value": "248",
       "tone": "info",
-      "trend": { "label": "+18 this month", "direction": "up" }
+      "trend": {
+        "label": "+18 this month",
+        "direction": "up"
+      }
     },
     {
       "id": "rooms",
@@ -20,13 +26,6 @@
       "value": "320",
       "tone": "success",
       "hint": "82% Occupied"
-    },
-    {
-      "id": "revenue",
-      "label": "Monthly Revenue",
-      "value": "₹2,48,500",
-      "tone": "warning",
-      "trend": { "label": "+12.4% this month", "direction": "up" }
     }
   ],
   "occupancy": {
@@ -34,71 +33,16 @@
     "occupied": 261,
     "vacant": 59,
     "slices": [
-      { "name": "Occupied", "value": 261 },
-      { "name": "Vacant", "value": 59 }
+      {
+        "name": "Occupied",
+        "value": 261
+      },
+      {
+        "name": "Vacant",
+        "value": 59
+      }
     ]
   },
-  "monthlyRevenue": [
-    { "label": "Jan", "value": 168000 },
-    { "label": "Feb", "value": 182000 },
-    { "label": "Mar", "value": 175000 },
-    { "label": "Apr", "value": 198000 },
-    { "label": "May", "value": 210000 },
-    { "label": "Jun", "value": 226000 },
-    { "label": "Jul", "value": 248500 }
-  ],
-  "recentActivity": [
-    {
-      "id": "a1",
-      "title": "New tenant added",
-      "detail": "Rahul Sharma assigned to Room 205-B",
-      "time": "12 min ago"
-    },
-    {
-      "id": "a2",
-      "title": "Payment received",
-      "detail": "₹8,000 collected from Room 112",
-      "time": "34 min ago"
-    },
-    {
-      "id": "a3",
-      "title": "Complaint assigned",
-      "detail": "Plumbing issue sent to maintenance",
-      "time": "1 hr ago"
-    },
-    {
-      "id": "a4",
-      "title": "Notice published",
-      "detail": "Water supply downtime on Sunday",
-      "time": "3 hr ago"
-    }
-  ],
-  "pendingPayments": [
-    {
-      "id": "p1",
-      "tenant": "Aarav Mehta",
-      "room": "112-A",
-      "amount": 8500,
-      "dueDate": "04 Sep 2026",
-      "status": "Overdue"
-    },
-    {
-      "id": "p2",
-      "tenant": "Sneha Iyer",
-      "room": "204-B",
-      "amount": 9200,
-      "dueDate": "05 Sep 2026",
-      "status": "Due"
-    },
-    {
-      "id": "p3",
-      "tenant": "Kabir Shah",
-      "room": "310-A",
-      "amount": 7800,
-      "dueDate": "06 Sep 2026",
-      "status": "Due"
-    }
-  ],
   "recentComplaints": [
     {
       "id": "CMP-1042",
@@ -123,9 +67,29 @@
     }
   ],
   "occupancyByProperty": [
-    { "id": "prop-sunrise", "name": "Sunrise PG", "occupied": 86, "total": 100 },
-    { "id": "prop-greenview", "name": "GreenView Hostel", "occupied": 72, "total": 90 },
-    { "id": "prop-oak", "name": "Oak Street Residency", "occupied": 61, "total": 80 },
-    { "id": "prop-lake", "name": "Lakeside Stay", "occupied": 42, "total": 50 }
+    {
+      "id": "prop-sunrise",
+      "name": "Sunrise PG",
+      "occupied": 86,
+      "total": 100
+    },
+    {
+      "id": "prop-greenview",
+      "name": "GreenView Hostel",
+      "occupied": 72,
+      "total": 90
+    },
+    {
+      "id": "prop-oak",
+      "name": "Oak Street Residency",
+      "occupied": 61,
+      "total": 80
+    },
+    {
+      "id": "prop-lake",
+      "name": "Lakeside Stay",
+      "occupied": 42,
+      "total": 50
+    }
   ]
 }

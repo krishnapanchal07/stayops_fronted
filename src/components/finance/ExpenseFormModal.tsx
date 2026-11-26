@@ -17,7 +17,11 @@ interface PropertyOption {
   id: string;
   name: string;
 }
-import { emptyExpenseForm, validateExpenseForm, type ExpenseFormErrors } from '@/utils/financeValidation';
+import {
+  emptyExpenseForm,
+  validateExpenseForm,
+  type ExpenseFormErrors,
+} from '@/utils/financeValidation';
 import { useState } from 'react';
 
 interface ExpenseFormModalProps {
@@ -70,7 +74,7 @@ export function ExpenseFormModal({
       <div className="space-y-4">
         <Select
           label="Property"
-          name="propertyId"
+          name="expense-propertyId"
           required
           value={values.propertyId}
           error={errors.propertyId}
@@ -78,11 +82,13 @@ export function ExpenseFormModal({
             { value: '', label: 'Select property' },
             ...properties.map((property) => ({ value: property.id, label: property.name })),
           ]}
-          onChange={(event) => setValues((current) => ({ ...current, propertyId: event.target.value }))}
+          onChange={(event) =>
+            setValues((current) => ({ ...current, propertyId: event.target.value }))
+          }
         />
         <Select
           label="Category"
-          name="category"
+          name="expense-category"
           required
           value={values.category}
           error={errors.category}
@@ -90,63 +96,85 @@ export function ExpenseFormModal({
             value: category,
             label: EXPENSE_CATEGORY_LABELS[category],
           }))}
-          onChange={(event) => setValues((current) => ({ ...current, category: event.target.value as ExpenseCategory }))}
+          onChange={(event) =>
+            setValues((current) => ({
+              ...current,
+              category: event.target.value as ExpenseCategory,
+            }))
+          }
         />
         <TextInput
           label="Description"
-          name="description"
+          name="expense-description"
           required
           value={values.description}
           error={errors.description}
-          onChange={(event) => setValues((current) => ({ ...current, description: event.target.value }))}
+          onChange={(event) =>
+            setValues((current) => ({ ...current, description: event.target.value }))
+          }
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextInput
             label="Amount"
-            name="amount"
+            name="expense-amount"
             type="number"
             required
             min={1}
             value={values.amount || ''}
             error={errors.amount}
-            onChange={(event) => setValues((current) => ({ ...current, amount: Number(event.target.value) }))}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, amount: Number(event.target.value) }))
+            }
           />
           <DateInput
             label="Expense date"
-            name="expenseDate"
+            name="expense-expenseDate"
             required
             value={values.expenseDate}
             error={errors.expenseDate}
-            onChange={(event) => setValues((current) => ({ ...current, expenseDate: event.target.value }))}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, expenseDate: event.target.value }))
+            }
           />
         </div>
         <TextInput
           label="Vendor"
-          name="vendor"
+          name="expense-vendor"
           value={values.vendor}
           onChange={(event) => setValues((current) => ({ ...current, vendor: event.target.value }))}
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
             label="Payment method"
-            name="paymentMethod"
+            name="expense-paymentMethod"
             value={values.paymentMethod}
-            options={Object.values(PaymentMethod).map((method) => ({ value: method, label: PAYMENT_METHOD_LABELS[method] }))}
+            options={Object.values(PaymentMethod).map((method) => ({
+              value: method,
+              label: PAYMENT_METHOD_LABELS[method],
+            }))}
             onChange={(event) =>
-              setValues((current) => ({ ...current, paymentMethod: event.target.value as PaymentMethod }))
+              setValues((current) => ({
+                ...current,
+                paymentMethod: event.target.value as PaymentMethod,
+              }))
             }
           />
           <Select
             label="Status"
-            name="status"
+            name="expense-status"
             value={values.status}
-            options={Object.values(ExpenseStatus).map((status) => ({ value: status, label: EXPENSE_STATUS_LABELS[status] }))}
-            onChange={(event) => setValues((current) => ({ ...current, status: event.target.value as ExpenseStatus }))}
+            options={Object.values(ExpenseStatus).map((status) => ({
+              value: status,
+              label: EXPENSE_STATUS_LABELS[status],
+            }))}
+            onChange={(event) =>
+              setValues((current) => ({ ...current, status: event.target.value as ExpenseStatus }))
+            }
           />
         </div>
         <Textarea
           label="Notes"
-          name="notes"
+          name="expense-notes"
           rows={3}
           value={values.notes}
           onChange={(event) => setValues((current) => ({ ...current, notes: event.target.value }))}

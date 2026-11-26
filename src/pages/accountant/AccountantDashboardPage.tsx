@@ -1,3 +1,4 @@
+import { FinanceFilters, type FinanceDashboardFilters } from '@/components/finance/FinanceFilters';
 import { Card, CardHeader } from '@/components/common/Card';
 import { ActivityList } from '@/components/dashboard/ActivityList';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
@@ -10,12 +11,13 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { PATHS } from '@/routes/paths';
 import { dashboardService } from '@/services/dashboard/dashboardService';
 import { formatINR } from '@/utils/format';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export function AccountantDashboardPage() {
   const user = useCurrentUser();
-  const loader = useCallback(() => dashboardService.getAccountantDashboard(), []);
+  const [financeFilters,setFinanceFilters]=useState<FinanceDashboardFilters>({propertyId:'',fromDate:'',toDate:''});
+  const loader = useCallback(() => dashboardService.getAccountantDashboard({...financeFilters}), [financeFilters]);
   const { data, status, error, reload } = useAsyncResource(loader);
   const firstName = user?.name.split(' ')[0] ?? 'Accountant';
 
@@ -26,6 +28,7 @@ export function AccountantDashboardPage() {
         <p className="typo-secondary mt-1">Here’s the financial overview for StayOps.</p>
       </div>
 
+      <FinanceFilters value={financeFilters} onChange={setFinanceFilters} />
       {status === 'loading' ? <DashboardSkeleton /> : null}
       {status === 'error' ? (
         <ErrorState description={error ?? undefined} onRetry={reload} />

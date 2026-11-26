@@ -1,3 +1,4 @@
+import { financeToday } from '@/utils/financeCalc';
 import { ChargeType, type ExpenseFilters, type ExpenseFormValues, type InvoiceFilters, type InvoiceFormValues, type PaymentFilters, type PaymentFormValues } from '@/types/finance';
 import { formatINR } from '@/utils/format';
 
@@ -6,7 +7,7 @@ export type PaymentFormErrors = Partial<Record<keyof PaymentFormValues, string>>
 export type ExpenseFormErrors = Partial<Record<keyof ExpenseFormValues, string>>;
 
 export function emptyInvoiceForm(): InvoiceFormValues {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = financeToday();
   return {
     tenantId: '',
     billingPeriod: today.slice(0, 7),
@@ -24,7 +25,7 @@ export function emptyPaymentForm(): PaymentFormValues {
     invoiceId: '',
     amount: 0,
     method: 'UPI',
-    paymentDate: new Date().toISOString().slice(0, 10),
+    paymentDate: financeToday(),
     reference: '',
     notes: '',
   };
@@ -36,7 +37,7 @@ export function emptyExpenseForm(): ExpenseFormValues {
     category: 'MAINTENANCE',
     description: '',
     amount: 0,
-    expenseDate: new Date().toISOString().slice(0, 10),
+    expenseDate: financeToday(),
     vendor: '',
     paymentMethod: 'BANK_TRANSFER',
     status: 'PAID',

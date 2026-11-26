@@ -42,7 +42,7 @@ export function TenantDashboardPage() {
   }, [userId]);
   const { data, status, error, reload } = useAsyncResource(loader);
 
-  const paidPercent = 0;
+  const paidPercent = data?.rent.total ? Math.min(100,Math.round(data.rent.paid/data.rent.total*100)) : 0;
 
   return (
     <div>
@@ -76,7 +76,7 @@ export function TenantDashboardPage() {
           <div className="grid gap-5 lg:grid-cols-2">
             <Card>
               <CardHeader title="Rent Overview" />
-              <p className="typo-helper mb-4">The monthly rent below comes from your tenancy. Payment balances and settlement are not connected yet.</p>
+              <p className="typo-helper mb-4">Invoice totals and payment balances come from your saved financial records.</p>
               <div className="grid grid-cols-3 gap-3 text-sm">
                 <div>
                   <p className="typo-muted">Total Rent</p>
@@ -84,11 +84,11 @@ export function TenantDashboardPage() {
                 </div>
                 <div>
                   <p className="typo-muted">Paid</p>
-                  <p className="mt-1 font-semibold text-success">Unavailable</p>
+                  <p className="mt-1 font-semibold text-success">{formatINR(data.rent.paid)}</p>
                 </div>
                 <div>
                   <p className="typo-muted">Due</p>
-                  <p className="mt-1 font-semibold text-danger">Unavailable</p>
+                  <p className="mt-1 font-semibold text-danger">{formatINR(data.rent.due)}</p>
                 </div>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-primary-soft">
@@ -96,7 +96,7 @@ export function TenantDashboardPage() {
               </div>
               <p className="typo-helper mt-2">Due date {data.rent.dueDate}</p>
               <Button className="mt-5" fullWidth onClick={() => navigate(PATHS.tenant.payments)}>
-                Pay Now
+                View Payments
               </Button>
             </Card>
 
@@ -132,7 +132,7 @@ export function TenantDashboardPage() {
                   </Link>
                 }
               />
-              <p className="typo-secondary">Payment records are not connected yet.</p>
+              {data.upcomingPayments.length===0 ? <p className="typo-secondary">No outstanding invoices.</p> : null}
               <ul className="space-y-3">
                 {data.upcomingPayments.map((item) => (
                   <li key={item.id} className="flex items-center justify-between gap-3">

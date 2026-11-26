@@ -48,11 +48,11 @@ export function Modal({ open, title, onClose, children, footer, className }: Mod
         aria-modal="true"
         aria-labelledby="modal-title"
         className={cn(
-          'relative z-10 w-full max-w-lg rounded-2xl bg-surface shadow-[var(--shadow-overlay)]',
+          'relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-overlay)]',
           className,
         )}
       >
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
           <h2 id="modal-title" className="typo-subtitle">
             {title}
           </h2>
@@ -60,9 +60,9 @@ export function Modal({ open, title, onClose, children, footer, className }: Mod
             <X className="h-4 w-4" />
           </IconButton>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="min-h-0 overflow-y-auto px-6 py-5">{children}</div>
         {footer ? (
-          <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border px-6 py-4">
             {footer}
           </div>
         ) : null}

@@ -1,208 +1,124 @@
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardHeader } from '@/components/common/Card';
-import { Dropdown } from '@/components/common/Dropdown';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { StatusPill } from '@/components/dashboard/StatusPill';
-import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { EmptyState } from '@/components/feedback/EmptyState';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { PayNowModal } from '@/components/finance/PayNowModal';
-import { downloadReceipt } from '@/utils/financeReceipt';
 import { Select } from '@/components/forms/Select';
+import { TextInput } from '@/components/forms/TextInput';
 import { DataTable } from '@/components/tables/DataTable';
-import { IconButton } from '@/components/ui/IconButton';
 import { Button } from '@/components/ui/Button';
-import { Permission } from '@/constants/permissions';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useHasPermission } from '@/hooks/useHasPermission';
-import { useToast } from '@/hooks/useToast';
+import { useFinanceTable } from '@/hooks/useFinanceTable';
+import { financeService } from '@/services/finance/financeService';
 import { invoiceDetailPath, paymentDetailPath } from '@/routes/financePaths';
 import { PATHS } from '@/routes/paths';
-import { financeService } from '@/services/finance/financeService';
 import {
   INVOICE_STATUS_LABELS,
-  InvoiceStatus,
   PAYMENT_METHOD_LABELS,
-  PAYMENT_STATUS_LABELS,
   PaymentMethod,
-  PaymentStatus,
   type Invoice,
   type Payment,
 } from '@/types/finance';
 import type { DataTableColumn } from '@/types/ui';
 import { formatBillingPeriod } from '@/utils/financeCalc';
 import { formatINR, formatShortDate } from '@/utils/format';
-import { cn } from '@/utils/cn';
-import { Download, MoreHorizontal } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-type TabId = 'all' | 'due' | 'overdue' | 'completed';
-
+import { downloadReceipt } from '@/utils/financeReceipt';
 interface LedgerRow {
   id: string;
   date: string;
   description: string;
-  month: string;
   billingPeriod: string;
   amount: number;
   method: Payment['method'] | '';
   statusLabel: string;
   invoiceId: string;
   invoiceNumber: string;
-  paymentId?: string;
-  payment?: Payment;
-  invoice?: Invoice;
+  paymentId: string | null;
+  payment: Payment | null;
 }
-
-const TABS: { id: TabId; label: string }[] = [
+const tabs = [
   { id: 'all', label: 'All Payments' },
   { id: 'due', label: 'Due Payments' },
   { id: 'overdue', label: 'Overdue' },
   { id: 'completed', label: 'Completed' },
 ];
-
 export function TenantPaymentsPage() {
-  const user = useCurrentUser();
-  const toast = useToast();
   const navigate = useNavigate();
-  const canPay = useHasPermission(Permission.PAYMENT_CREATE);
-  const tenantId = user?.id ?? '';
-
-  const invoicesLoader = useCallback(() => financeService.getInvoicesByTenant(tenantId), [tenantId]);
-  const paymentsLoader = useCallback(() => financeService.getPaymentsByTenant(tenantId), [tenantId]);
-  const summaryLoader = useCallback(() => financeService.getTenantFinancialSummary(tenantId), [tenantId]);
-  const { data: invoices, status, error, reload: reloadInvoices } = useAsyncResource(invoicesLoader);
-  const { data: payments, reload: reloadPayments } = useAsyncResource(paymentsLoader);
-  const { data: summary, reload: reloadSummary } = useAsyncResource(summaryLoader);
-
-  const [tab, setTab] = useState<TabId>('all');
+  const [tab, setTab] = useState('all');
   const [month, setMonth] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [methodFilter, setMethodFilter] = useState('');
-  const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
-  const [paying, setPaying] = useState(false);
-
-  const reloadAll = () => {
-    reloadInvoices();
-    reloadPayments();
-    reloadSummary();
-  };
-
-  const rows = useMemo<LedgerRow[]>(() => {
-    const invoiceRows = (invoices ?? []).map((invoice) => {
-      const latest = (payments ?? [])
-        .filter((payment) => payment.invoiceId === invoice.id)
-        .sort((left, right) => right.paymentDate.localeCompare(left.paymentDate))[0];
-      return {
-        id: `inv-${invoice.id}`,
-        date: latest?.paymentDate ?? invoice.issueDate,
-        description: invoice.items[0]?.description ?? `Invoice ${invoice.invoiceNumber}`,
-        month: formatBillingPeriod(invoice.billingPeriod),
-        billingPeriod: invoice.billingPeriod,
-        amount: invoice.outstandingAmount > 0 ? invoice.outstandingAmount : invoice.total,
-        method: latest?.method ?? '',
-        statusLabel: INVOICE_STATUS_LABELS[invoice.status],
-        invoiceId: invoice.id,
-        invoiceNumber: invoice.invoiceNumber,
-        paymentId: latest?.status === PaymentStatus.SUCCESS ? latest.id : undefined,
-        payment: latest,
-        invoice,
-      };
-    });
-    const extraPayments = (payments ?? [])
-      .filter((payment) => payment.status !== PaymentStatus.SUCCESS)
-      .map((payment) => ({
-        id: `pay-${payment.id}`,
-        date: payment.paymentDate,
-        description: `Payment ${payment.paymentNumber}`,
-        month: formatBillingPeriod(payment.paymentDate.slice(0, 7)),
-        billingPeriod: payment.paymentDate.slice(0, 7),
-        amount: payment.amount,
-        method: payment.method,
-        statusLabel: PAYMENT_STATUS_LABELS[payment.status],
-        invoiceId: payment.invoiceId,
-        invoiceNumber: payment.invoiceNumber,
-        paymentId: payment.id,
-        payment,
-      }));
-    return [...invoiceRows, ...extraPayments].sort((left, right) => right.date.localeCompare(left.date));
-  }, [invoices, payments]);
-
-  const filtered = rows.filter((row) => {
-    if (tab === 'due' && !(row.invoice && row.invoice.outstandingAmount > 0)) return false;
-    if (tab === 'overdue' && row.invoice?.status !== InvoiceStatus.OVERDUE) return false;
-    if (tab === 'completed' && row.invoice?.status !== InvoiceStatus.PAID && row.payment?.status !== PaymentStatus.SUCCESS)
-      return false;
-    if (month && row.billingPeriod !== month) return false;
-    if (statusFilter && row.statusLabel !== statusFilter) return false;
-    if (methodFilter && row.method !== methodFilter) return false;
-    return true;
+  const [method, setMethod] = useState('');
+  const ledger = useFinanceTable<LedgerRow>('ledger', {
+    tab,
+    billingPeriod: month,
+    status: statusFilter,
+    method,
   });
-
-  const months = [...new Set(rows.map((row) => row.billingPeriod))].sort().reverse();
-
+  const invoices = useFinanceTable<Invoice>('invoices', {});
+  const summaryLoader = useCallback(() => financeService.getMyFinancialSummary(), []);
+  const summary = useAsyncResource(summaryLoader);
   const columns: DataTableColumn<LedgerRow>[] = [
-    { id: 'date', header: 'Date', accessor: 'date', sortable: true, render: (row) => formatShortDate(row.date) },
-    { id: 'description', header: 'Description', accessor: 'description', sortable: true },
-    { id: 'month', header: 'Month', accessor: 'month', sortable: true },
-    { id: 'amount', header: 'Amount', accessor: 'amount', sortable: true, render: (row) => formatINR(row.amount) },
+    {
+      id: 'date',
+      header: 'Date',
+      accessor: 'date',
+      sortable: true,
+      render: (r) => formatShortDate(r.date),
+    },
+    { id: 'description', header: 'Description', accessor: 'description' },
+    {
+      id: 'billingPeriod',
+      header: 'Month',
+      accessor: 'billingPeriod',
+      sortable: true,
+      render: (r) => formatBillingPeriod(r.billingPeriod),
+    },
+    {
+      id: 'amount',
+      header: 'Amount',
+      accessor: 'amount',
+      sortable: true,
+      render: (r) => formatINR(r.amount),
+    },
     {
       id: 'method',
       header: 'Method',
-      accessor: 'method',
-      render: (row) => (row.method ? PAYMENT_METHOD_LABELS[row.method] : '—'),
+      render: (r) => (r.method ? PAYMENT_METHOD_LABELS[r.method] : '—'),
     },
-    { id: 'status', header: 'Status', accessor: 'statusLabel', render: (row) => <StatusPill value={row.statusLabel} /> },
-    {
-      id: 'invoice',
-      header: 'Invoice',
-      accessor: 'invoiceNumber',
-      render: (row) => (
-        <button
-          type="button"
-          className="font-medium text-primary"
-          onClick={() => navigate(invoiceDetailPath('tenant', row.invoiceId))}
-        >
-          {row.invoiceNumber}
-        </button>
-      ),
-    },
+    { id: 'status', header: 'Status', render: (r) => <StatusPill value={r.statusLabel} /> },
+    { id: 'invoiceNumber', header: 'Invoice', accessor: 'invoiceNumber', sortable: true },
     {
       id: 'actions',
-      header: 'Action',
-      render: (row) => (
-        <div className="flex items-center gap-1">
-          {row.paymentId && row.payment?.status === PaymentStatus.SUCCESS ? (
-            <IconButton label="Download receipt" variant="ghost" size="sm" onClick={() => downloadReceipt(row.payment!)}>
-              <Download className="h-4 w-4" />
-            </IconButton>
-          ) : (
-            <span className="px-2 text-muted">—</span>
-          )}
-          <Dropdown
-            align="right"
-            trigger={
-              <IconButton label={`Actions for ${row.invoiceNumber}`} variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </IconButton>
-            }
-            items={[
-              { id: 'view', label: 'View invoice', onSelect: () => navigate(invoiceDetailPath('tenant', row.invoiceId)) },
-              ...(row.paymentId
-                ? [{ id: 'payment', label: 'View payment', onSelect: () => navigate(paymentDetailPath('tenant', row.paymentId!)) }]
-                : []),
-              ...(canPay && row.invoice && row.invoice.outstandingAmount > 0
-                ? [{ id: 'pay', label: 'Pay Now', onSelect: () => setPayInvoice(row.invoice!) }]
-                : []),
-            ]}
-          />
+      header: 'Actions',
+      render: (r) => (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => navigate(invoiceDetailPath('tenant', r.invoiceId))}
+          >
+            View Invoice
+          </Button>
+          {r.paymentId ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(paymentDetailPath('tenant', r.paymentId!))}
+            >
+              View Payment
+            </Button>
+          ) : null}
+          {r.payment?.status === 'SUCCESS' ? (
+            <Button size="sm" variant="outline" onClick={() => void downloadReceipt(r.payment!)}>
+              Receipt
+            </Button>
+          ) : null}
         </div>
       ),
     },
   ];
-
   return (
     <div>
       <PageHeader
@@ -210,154 +126,180 @@ export function TenantPaymentsPage() {
         description="View your payment history, invoices and outstanding dues."
         breadcrumbs={[{ label: 'Home', href: PATHS.tenant.dashboard }, { label: 'Payments' }]}
       />
-
-      {status === 'loading' ? <DashboardSkeleton /> : null}
-      {status === 'error' ? <ErrorState description={error ?? 'Unable to load payments.'} onRetry={reloadAll} /> : null}
-
-      {status === 'success' ? (
-        <div className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard metric={{ id: 'paid', label: 'Total Paid', value: formatINR(summary?.totalPaid ?? 0), tone: 'success' }} />
+      <p className="typo-helper mb-5">
+        Contact your property office to pay. Authorized staff will record your payment and issue a
+        receipt.
+      </p>
+      {summary.status === 'error' ? (
+        <ErrorState description={summary.error ?? undefined} onRetry={summary.reload} />
+      ) : null}
+      {summary.data ? (
+        <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { id: 'paid', label: 'Total Paid', value: summary.data.totalPaid },
+            { id: 'due', label: 'Total Due', value: summary.data.currentDue },
+            { id: 'overdue', label: 'Total Overdue', value: summary.data.overdue },
+            { id: 'month', label: 'This Month', value: summary.data.currentMonthPaid },
+          ].map((m) => (
             <StatCard
+              key={m.id}
               metric={{
-                id: 'due',
-                label: 'Total Due',
-                value: formatINR(summary?.currentDue ?? 0),
-                tone: (summary?.currentDue ?? 0) > 0 ? 'danger' : 'success',
+                ...m,
+                value: formatINR(m.value),
+                tone: m.id === 'paid' ? 'success' : 'primary',
               }}
             />
-            <StatCard metric={{ id: 'overdue', label: 'Total Overdue', value: formatINR(summary?.overdue ?? 0), tone: 'danger' }} />
-            <StatCard
-              metric={{ id: 'month', label: 'This Month', value: formatINR(summary?.currentMonthCharges ?? 0), tone: 'primary' }}
-            />
-          </div>
-
-          <Card>
-            <div className="mb-4 flex flex-wrap gap-2 border-b border-border pb-3">
-              {TABS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={cn(
-                    'rounded-xl px-4 py-2 text-sm font-medium',
-                    tab === item.id ? 'bg-primary-soft text-primary' : 'text-muted hover:bg-background',
-                  )}
-                  onClick={() => setTab(item.id)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <div className="mb-4 grid gap-3 sm:grid-cols-3">
-              <Select
-                label="Billing Month"
-                name="month"
-                value={month}
-                options={[{ value: '', label: 'All months' }, ...months.map((value) => ({ value, label: formatBillingPeriod(value) }))]}
-                onChange={(event) => setMonth(event.target.value)}
-              />
-              <Select
-                label="Status"
-                name="status"
-                value={statusFilter}
-                options={[
-                  { value: '', label: 'All statuses' },
-                  ...[...new Set(rows.map((row) => row.statusLabel))].map((value) => ({ value, label: value })),
-                ]}
-                onChange={(event) => setStatusFilter(event.target.value)}
-              />
-              <Select
-                label="Payment Method"
-                name="method"
-                value={methodFilter}
-                options={[
-                  { value: '', label: 'All methods' },
-                  ...Object.values(PaymentMethod).map((value) => ({ value, label: PAYMENT_METHOD_LABELS[value] })),
-                ]}
-                onChange={(event) => setMethodFilter(event.target.value)}
-              />
-            </div>
-            {filtered.length === 0 ? (
-              <EmptyState title="No payments found." description="Your invoices and payment history will appear here." />
-            ) : (
-              <DataTable
-                columns={columns}
-                data={filtered}
-                rowKey={(row) => row.id}
-                searchPlaceholder="Search invoice or description…"
-                emptyTitle="No payments found."
-                renderMobile={(row) => (
-                  <div className="rounded-xl border border-border p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold">{row.description}</p>
-                      <StatusPill value={row.statusLabel} />
-                    </div>
-                    <p className="typo-helper mt-1">
-                      {formatShortDate(row.date)} · {row.month} · {formatINR(row.amount)}
-                    </p>
-                  </div>
-                )}
-              />
-            )}
-          </Card>
-
-          <Card>
-            <CardHeader title="My Invoices" />
-            {(invoices ?? []).length === 0 ? (
-              <EmptyState title="No invoices found." description="Issued invoices will appear here." />
-            ) : (
-              <DataTable
-                columns={[
-                  { id: 'number', header: 'Invoice', accessor: 'invoiceNumber', sortable: true },
-                  { id: 'month', header: 'Billing month', accessor: 'billingPeriod', render: (row) => formatBillingPeriod(row.billingPeriod) },
-                  { id: 'issue', header: 'Issue date', accessor: 'issueDate', render: (row) => formatShortDate(row.issueDate) },
-                  { id: 'due', header: 'Due date', accessor: 'dueDate', render: (row) => formatShortDate(row.dueDate) },
-                  { id: 'total', header: 'Total', accessor: 'total', render: (row) => formatINR(row.total) },
-                  { id: 'paid', header: 'Paid', accessor: 'paidAmount', render: (row) => formatINR(row.paidAmount) },
-                  { id: 'out', header: 'Outstanding', accessor: 'outstandingAmount', render: (row) => formatINR(row.outstandingAmount) },
-                  { id: 'status', header: 'Status', accessor: 'status', render: (row) => <StatusPill value={INVOICE_STATUS_LABELS[row.status]} /> },
-                  {
-                    id: 'actions',
-                    header: 'Action',
-                    render: (row) => (
-                      <Button size="sm" variant="ghost" onClick={() => navigate(invoiceDetailPath('tenant', row.id))}>
-                        View
-                      </Button>
-                    ),
-                  },
-                ]}
-                data={invoices ?? []}
-                rowKey={(row) => row.id}
-                searchPlaceholder="Search invoices…"
-                emptyTitle="No invoices found."
-              />
-            )}
-          </Card>
+          ))}
         </div>
       ) : null}
-
-      <PayNowModal
-        key={payInvoice?.id ?? 'pay-closed'}
-        open={Boolean(payInvoice)}
-        invoice={payInvoice}
-        tenantId={tenantId}
-        submitting={paying}
-        onClose={() => setPayInvoice(null)}
-        onSubmit={async (values) => {
-          setPaying(true);
-          try {
-            await financeService.recordPayment(values, { actor: user?.name ?? 'Tenant' });
-            toast('success', 'Payment recorded successfully.', `${formatINR(values.amount)} applied to ${payInvoice?.invoiceNumber}.`);
-            setPayInvoice(null);
-            reloadAll();
-          } catch (cause) {
-            toast('error', 'Payment failed', cause instanceof Error ? cause.message : 'Please try again.');
-            throw cause;
-          } finally {
-            setPaying(false);
-          }
-        }}
-      />
+      <div className="space-y-5">
+        <Card>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {tabs.map((t) => (
+              <Button
+                key={t.id}
+                variant={tab === t.id ? 'primary' : 'outline'}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </Button>
+            ))}
+          </div>
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            <TextInput
+              label="Billing Month"
+              name="tenantBillingMonth"
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            />
+            <Select
+              label="Status"
+              name="tenantFinanceStatus"
+              value={statusFilter}
+              options={[
+                { value: '', label: 'All statuses' },
+                ...[
+                  'Paid',
+                  'Due',
+                  'Partially Paid',
+                  'Overdue',
+                  'Pending',
+                  'Failed',
+                  'Refunded',
+                  'Cancelled',
+                ].map((value) => ({ value, label: value })),
+              ]}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            />
+            <Select
+              label="Payment Method"
+              name="tenantFinanceMethod"
+              value={method}
+              options={[
+                { value: '', label: 'All methods' },
+                ...Object.values(PaymentMethod).map((value) => ({
+                  value,
+                  label: PAYMENT_METHOD_LABELS[value],
+                })),
+              ]}
+              onChange={(e) => setMethod(e.target.value)}
+            />
+          </div>
+          <TextInput
+            label="Search payments"
+            name="tenantLedgerSearch"
+            value={ledger.search}
+            onChange={(e) => ledger.setSearch(e.target.value)}
+          />
+          <DataTable
+            columns={columns}
+            data={ledger.data?.items ?? []}
+            {...ledger.tableProps}
+            isError={ledger.status === 'error'}
+            onRetry={ledger.reload}
+            rowKey={(r) => r.id}
+            emptyTitle="No payments found."
+            renderMobile={(r) => (
+              <div className="space-y-2 rounded-xl border border-border p-3">
+                <p className="font-semibold">{r.description}</p>
+                <StatusPill value={r.statusLabel} />
+                <p>
+                  {formatShortDate(r.date)} · {formatINR(r.amount)}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(invoiceDetailPath('tenant', r.invoiceId))}
+                  >
+                    View Invoice
+                  </Button>
+                  {r.paymentId ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(paymentDetailPath('tenant', r.paymentId!))}
+                    >
+                      View Payment
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            )}
+          />
+        </Card>
+        <Card>
+          <CardHeader title="My Invoices" />
+          <TextInput
+            label="Search invoices"
+            name="tenantInvoiceSearch"
+            value={invoices.search}
+            onChange={(e) => invoices.setSearch(e.target.value)}
+          />
+          <DataTable<Invoice>
+            columns={[
+              { id: 'invoiceNumber', header: 'Invoice', accessor: 'invoiceNumber', sortable: true },
+              {
+                id: 'billingPeriod',
+                header: 'Billing month',
+                render: (r) => formatBillingPeriod(r.billingPeriod),
+              },
+              { id: 'total', header: 'Total', render: (r) => formatINR(r.total) },
+              { id: 'paidAmount', header: 'Paid', render: (r) => formatINR(r.paidAmount) },
+              {
+                id: 'outstandingAmount',
+                header: 'Outstanding',
+                render: (r) => formatINR(r.outstandingAmount),
+              },
+              {
+                id: 'status',
+                header: 'Status',
+                render: (r) => <StatusPill value={INVOICE_STATUS_LABELS[r.status]} />,
+              },
+              {
+                id: 'actions',
+                header: 'Actions',
+                render: (r) => (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => navigate(invoiceDetailPath('tenant', r.id))}
+                  >
+                    View
+                  </Button>
+                ),
+              },
+            ]}
+            data={invoices.data?.items ?? []}
+            {...invoices.tableProps}
+            isError={invoices.status === 'error'}
+            onRetry={invoices.reload}
+            rowKey={(r) => r.id}
+            emptyTitle="No invoices found."
+          />
+        </Card>
+      </div>
     </div>
   );
 }

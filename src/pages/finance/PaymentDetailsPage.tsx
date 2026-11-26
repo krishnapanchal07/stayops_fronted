@@ -14,7 +14,12 @@ import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useHasPermission } from '@/hooks/useHasPermission';
 import { useToast } from '@/hooks/useToast';
-import { financeHomePath, invoiceDetailPath, paymentsListPath, scopeFromPath } from '@/routes/financePaths';
+import {
+  financeHomePath,
+  invoiceDetailPath,
+  paymentsListPath,
+  scopeFromPath,
+} from '@/routes/financePaths';
 import { financeService } from '@/services/finance/financeService';
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, PaymentStatus } from '@/types/finance';
 import { formatINR, formatShortDate } from '@/utils/format';
@@ -36,10 +41,6 @@ export function PaymentDetailsPage() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  if (status === 'success' && payment && isTenant && payment.tenantId !== user?.id) {
-    return <ErrorState description="You can only view your own payments." />;
-  }
 
   return (
     <div>
@@ -74,7 +75,9 @@ export function PaymentDetailsPage() {
       />
 
       {status === 'loading' ? <DashboardSkeleton /> : null}
-      {status === 'error' ? <ErrorState description={error ?? 'Payment not found.'} onRetry={reload} /> : null}
+      {status === 'error' ? (
+        <ErrorState description={error ?? 'Payment not found.'} onRetry={reload} />
+      ) : null}
 
       {status === 'success' && payment ? (
         <Card>
@@ -132,7 +135,12 @@ export function PaymentDetailsPage() {
         </Card>
       ) : null}
 
-      <Modal open={receiptOpen} title="Receipt" onClose={() => setReceiptOpen(false)} className="max-w-xl">
+      <Modal
+        open={receiptOpen}
+        title="Receipt"
+        onClose={() => setReceiptOpen(false)}
+        className="max-w-xl"
+      >
         {payment ? <ReceiptView payment={payment} /> : null}
       </Modal>
 
@@ -150,7 +158,11 @@ export function PaymentDetailsPage() {
             setRefundOpen(false);
             reload();
           } catch (cause) {
-            toast('error', 'Unable to refund', cause instanceof Error ? cause.message : 'Please try again.');
+            toast(
+              'error',
+              'Unable to refund',
+              cause instanceof Error ? cause.message : 'Please try again.',
+            );
           } finally {
             setSaving(false);
           }

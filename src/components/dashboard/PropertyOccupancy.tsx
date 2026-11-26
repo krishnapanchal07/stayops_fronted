@@ -11,7 +11,7 @@ export function PropertyOccupancy({ items }: PropertyOccupancyProps) {
       <CardHeader title="Occupancy by Property" />
       <ul className="space-y-4">
         {items.map((item) => {
-          const percent = Math.round((item.occupied / item.total) * 100);
+          const percent = item.total ? Math.round((item.occupied / item.total) * 100) : 0;
           return (
             <li key={item.id}>
               <div className="mb-1.5 flex items-center justify-between text-sm">

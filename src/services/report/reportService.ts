@@ -1,5 +1,6 @@
 import { complaintService } from '@/services/complaint/complaintService';
-import { financeService } from '@/services/finance/financeService';
+import { workflowRequest } from '@/services/http/workflows';
+import { financeUrl } from '@/services/finance/api';
 import { leaveService } from '@/services/leave/leaveService';
 import { maintenanceService } from '@/services/maintenance/maintenanceService';
 import { propertyService } from '@/services/property/propertyService';
@@ -7,14 +8,6 @@ import { roomService } from '@/services/room/roomService';
 import { tenantService } from '@/services/tenant/tenantService';
 import { visitorService } from '@/services/visitor/visitorService';
 import { ComplaintStatus } from '@/types/complaint';
-import {
-  EXPENSE_CATEGORY_LABELS,
-  ExpenseStatus,
-  InvoiceStatus,
-  PAYMENT_METHOD_LABELS,
-  PaymentMethod,
-  PaymentStatus,
-} from '@/types/finance';
 import { LeaveStatus } from '@/types/leave';
 import { MaintenanceStatus } from '@/types/maintenance';
 import {
@@ -48,7 +41,12 @@ function percent(part: number, total: number): number {
   return Math.round((part / total) * 100);
 }
 
-function metric(id: string, label: string, value: string, tone: ReportMetric['tone'] = 'primary'): ReportMetric {
+function metric(
+  id: string,
+  label: string,
+  value: string,
+  tone: ReportMetric['tone'] = 'primary',
+): ReportMetric {
   return { id, label, value, tone };
 }
 
@@ -76,13 +74,13 @@ export const reportService = {
       case ReportType.OCCUPANCY:
         return wait(await occupancyReport(filters));
       case ReportType.REVENUE:
-        return wait(await revenueReport(filters));
+        return workflowRequest('get', financeUrl(`reports/${filters.type}`, { ...filters }));
       case ReportType.PAYMENTS:
-        return wait(await paymentReport(filters));
+        return workflowRequest('get', financeUrl(`reports/${filters.type}`, { ...filters }));
       case ReportType.OUTSTANDING:
-        return wait(await outstandingReport(filters));
+        return workflowRequest('get', financeUrl(`reports/${filters.type}`, { ...filters }));
       case ReportType.EXPENSES:
-        return wait(await expenseReport(filters));
+        return workflowRequest('get', financeUrl(`reports/${filters.type}`, { ...filters }));
       case ReportType.TENANTS:
         return wait(await tenantReport(filters));
       case ReportType.COMPLAINTS:
@@ -100,13 +98,20 @@ export const reportService = {
 };
 
 async function occupancyReport(filters: ReportFilters): Promise<ReportResult> {
-  const [rooms, properties] = await Promise.all([roomService.getRooms(), propertyService.getProperties()]);
-  const scopedRooms = rooms.filter((room) => !filters.propertyId || room.propertyId === filters.propertyId);
+  const [rooms, properties] = await Promise.all([
+    roomService.getRooms(),
+    propertyService.getProperties(),
+  ]);
+  const scopedRooms = rooms.filter(
+    (room) => !filters.propertyId || room.propertyId === filters.propertyId,
+  );
   const totalRooms = scopedRooms.length;
   const totalBeds = scopedRooms.reduce((sum, room) => sum + room.capacity, 0);
   const occupied = scopedRooms.reduce((sum, room) => sum + room.occupiedBeds, 0);
   const available = totalBeds - occupied;
-  const propertiesInScope = properties.filter((property) => !filters.propertyId || property.id === filters.propertyId);
+  const propertiesInScope = properties.filter(
+    (property) => !filters.propertyId || property.id === filters.propertyId,
+  );
 
   return result(
     ReportType.OCCUPANCY,
@@ -139,194 +144,22 @@ async function occupancyReport(filters: ReportFilters): Promise<ReportResult> {
   );
 }
 
-async function revenueReport(filters: ReportFilters): Promise<ReportResult> {
-  const [invoices, payments] = await Promise.all([financeService.getInvoices(), financeService.getPayments()]);
-  const scopedInvoices = invoices.filter(
-    (invoice) =>
-      (!filters.propertyId || invoice.propertyId === filters.propertyId) &&
-      inRange(invoice.issueDate, filters.fromDate, filters.toDate) &&
-      !invoice.cancelled,
-  );
-  const scopedPayments = payments.filter(
-    (payment) =>
-      payment.status === PaymentStatus.SUCCESS &&
-      (!filters.propertyId || payment.propertyId === filters.propertyId) &&
-      inRange(payment.paymentDate, filters.fromDate, filters.toDate),
-  );
-  const billed = scopedInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
-  const collected = scopedPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const outstanding = scopedInvoices.reduce((sum, invoice) => sum + invoice.outstandingAmount, 0);
-  const overdue = scopedInvoices
-    .filter((invoice) => invoice.status === InvoiceStatus.OVERDUE)
-    .reduce((sum, invoice) => sum + invoice.outstandingAmount, 0);
-
-  const months = new Map<string, { billed: number; collected: number }>();
-  scopedInvoices.forEach((invoice) => {
-    const key = invoice.issueDate.slice(0, 7);
-    const current = months.get(key) ?? { billed: 0, collected: 0 };
-    current.billed += invoice.total;
-    months.set(key, current);
-  });
-  scopedPayments.forEach((payment) => {
-    const key = payment.paymentDate.slice(0, 7);
-    const current = months.get(key) ?? { billed: 0, collected: 0 };
-    current.collected += payment.amount;
-    months.set(key, current);
-  });
-
-  const trend = [...months.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([label, value]) => ({ label, value: value.collected }));
-
-  return result(
-    ReportType.REVENUE,
-    [
-      metric('billed', 'Total Invoiced', formatINR(billed)),
-      metric('collected', 'Total Collected', formatINR(collected), 'success'),
-      metric('outstanding', 'Outstanding', formatINR(outstanding), 'warning'),
-      metric('overdue', 'Overdue', formatINR(overdue), 'danger'),
-    ],
-    [
-      { id: 'month', header: 'Month' },
-      { id: 'billed', header: 'Invoiced' },
-      { id: 'collected', header: 'Collected' },
-    ],
-    [...months.entries()]
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([month, value]) => ({
-        id: month,
-        label: month,
-        values: { month, billed: formatINR(value.billed), collected: formatINR(value.collected) },
-      })),
-    trend,
-  );
-}
-
-async function paymentReport(filters: ReportFilters): Promise<ReportResult> {
-  const payments = await financeService.getPayments();
-  const scoped = payments.filter(
-    (payment) =>
-      (!filters.propertyId || payment.propertyId === filters.propertyId) &&
-      inRange(payment.paymentDate, filters.fromDate, filters.toDate) &&
-      (!filters.status || payment.status === filters.status),
-  );
-  const count = (status: PaymentStatus) => scoped.filter((payment) => payment.status === status).length;
-  const methodRows = Object.values(PaymentMethod).map((method) => {
-    const items = scoped.filter((payment) => payment.method === method && payment.status === PaymentStatus.SUCCESS);
-    const amount = items.reduce((sum, payment) => sum + payment.amount, 0);
-    return {
-      id: method,
-      label: PAYMENT_METHOD_LABELS[method],
-      values: {
-        method: PAYMENT_METHOD_LABELS[method],
-        count: items.length,
-        amount: formatINR(amount),
-      },
-    };
-  });
-
-  return result(
-    ReportType.PAYMENTS,
-    [
-      metric('total', 'Total Payments', String(scoped.length)),
-      metric('success', 'Successful', String(count(PaymentStatus.SUCCESS)), 'success'),
-      metric('pending', 'Pending', String(count(PaymentStatus.PENDING)), 'warning'),
-      metric('failed', 'Failed', String(count(PaymentStatus.FAILED)), 'danger'),
-      metric('refunded', 'Refunded', String(count(PaymentStatus.REFUNDED)), 'info'),
-    ],
-    [
-      { id: 'method', header: 'Method' },
-      { id: 'count', header: 'Successful count' },
-      { id: 'amount', header: 'Amount' },
-    ],
-    methodRows,
-  );
-}
-
-async function outstandingReport(filters: ReportFilters): Promise<ReportResult> {
-  const invoices = await financeService.getInvoices();
-  const scoped = invoices.filter(
-    (invoice) =>
-      invoice.outstandingAmount > 0 &&
-      !invoice.cancelled &&
-      (!filters.propertyId || invoice.propertyId === filters.propertyId) &&
-      inRange(invoice.dueDate, filters.fromDate, filters.toDate),
-  );
-  const overdue = scoped.filter((invoice) => invoice.status === InvoiceStatus.OVERDUE);
-  return result(
-    ReportType.OUTSTANDING,
-    [
-      metric('accounts', 'Open invoices', String(scoped.length)),
-      metric('amount', 'Outstanding', formatINR(scoped.reduce((sum, invoice) => sum + invoice.outstandingAmount, 0)), 'warning'),
-      metric('overdue', 'Overdue invoices', String(overdue.length), 'danger'),
-      metric('overdueAmt', 'Overdue amount', formatINR(overdue.reduce((sum, invoice) => sum + invoice.outstandingAmount, 0)), 'danger'),
-    ],
-    [
-      { id: 'tenant', header: 'Tenant' },
-      { id: 'property', header: 'Property' },
-      { id: 'due', header: 'Due date' },
-      { id: 'amount', header: 'Outstanding' },
-      { id: 'status', header: 'Status' },
-    ],
-    scoped.slice(0, 40).map((invoice) => ({
-      id: invoice.id,
-      label: invoice.tenantName,
-      values: {
-        tenant: invoice.tenantName,
-        property: invoice.propertyName,
-        due: invoice.dueDate,
-        amount: formatINR(invoice.outstandingAmount),
-        status: invoice.status,
-      },
-    })),
-  );
-}
-
-async function expenseReport(filters: ReportFilters): Promise<ReportResult> {
-  const expenses = await financeService.getExpenses();
-  const scoped = expenses.filter(
-    (expense) =>
-      expense.status !== ExpenseStatus.CANCELLED &&
-      (!filters.propertyId || expense.propertyId === filters.propertyId) &&
-      inRange(expense.expenseDate, filters.fromDate, filters.toDate) &&
-      (!filters.category || expense.category === filters.category),
-  );
-  const total = scoped.reduce((sum, expense) => sum + expense.amount, 0);
-  const rows = Object.entries(EXPENSE_CATEGORY_LABELS).map(([category, label]) => {
-    const items = scoped.filter((expense) => expense.category === category);
-    const amount = items.reduce((sum, expense) => sum + expense.amount, 0);
-    return {
-      id: category,
-      label,
-      values: { category: label, count: items.length, amount: formatINR(amount) },
-    };
-  });
-
-  return result(
-    ReportType.EXPENSES,
-    [
-      metric('total', 'Total Expenses', formatINR(total), 'warning'),
-      metric('count', 'Expense records', String(scoped.length), 'info'),
-    ],
-    [
-      { id: 'category', header: 'Category' },
-      { id: 'count', header: 'Count' },
-      { id: 'amount', header: 'Amount' },
-    ],
-    rows,
-  );
-}
-
 async function tenantReport(filters: ReportFilters): Promise<ReportResult> {
-  const [tenants, properties] = await Promise.all([tenantService.getTenants(), propertyService.getProperties()]);
+  const [tenants, properties] = await Promise.all([
+    tenantService.getTenants(),
+    propertyService.getProperties(),
+  ]);
   const scoped = tenants.filter(
     (tenant) =>
       (!filters.propertyId || tenant.propertyId === filters.propertyId) &&
       inRange(tenant.createdAt, filters.fromDate, filters.toDate) &&
       (!filters.status || tenant.status === filters.status),
   );
-  const count = (status: TenantStatus) => scoped.filter((tenant) => tenant.status === status).length;
-  const propertiesInScope = properties.filter((property) => !filters.propertyId || property.id === filters.propertyId);
+  const count = (status: TenantStatus) =>
+    scoped.filter((tenant) => tenant.status === status).length;
+  const propertiesInScope = properties.filter(
+    (property) => !filters.propertyId || property.id === filters.propertyId,
+  );
 
   return result(
     ReportType.TENANTS,
@@ -385,17 +218,36 @@ async function complaintReport(filters: ReportFilters): Promise<ReportResult> {
     ReportType.COMPLAINTS,
     [
       metric('total', 'Total', String(scoped.length)),
-      metric('open', 'Open', String(scoped.filter((item) => item.status === ComplaintStatus.OPEN).length), 'warning'),
+      metric(
+        'open',
+        'Open',
+        String(scoped.filter((item) => item.status === ComplaintStatus.OPEN).length),
+        'warning',
+      ),
       metric(
         'progress',
         'In Progress',
         String(scoped.filter((item) => item.status === ComplaintStatus.IN_PROGRESS).length),
         'info',
       ),
-      metric('resolved', 'Resolved', String(scoped.filter((item) => item.status === ComplaintStatus.RESOLVED).length), 'success'),
-      metric('closed', 'Closed', String(scoped.filter((item) => item.status === ComplaintStatus.CLOSED).length)),
+      metric(
+        'resolved',
+        'Resolved',
+        String(scoped.filter((item) => item.status === ComplaintStatus.RESOLVED).length),
+        'success',
+      ),
+      metric(
+        'closed',
+        'Closed',
+        String(scoped.filter((item) => item.status === ComplaintStatus.CLOSED).length),
+      ),
       metric('overdue', 'Overdue', String(overdue), 'danger'),
-      metric('urgent', 'Urgent', String(scoped.filter((item) => item.priority === 'URGENT').length), 'danger'),
+      metric(
+        'urgent',
+        'Urgent',
+        String(scoped.filter((item) => item.priority === 'URGENT').length),
+        'danger',
+      ),
     ],
     [
       { id: 'category', header: 'Category' },
@@ -417,7 +269,8 @@ async function visitorReport(filters: ReportFilters): Promise<ReportResult> {
       inRange(visitor.visitDate, filters.fromDate, filters.toDate) &&
       (!filters.status || visitor.status === filters.status),
   );
-  const count = (status: VisitorStatus) => scoped.filter((visitor) => visitor.status === status).length;
+  const count = (status: VisitorStatus) =>
+    scoped.filter((visitor) => visitor.status === status).length;
   return result(
     ReportType.VISITORS,
     [
@@ -478,7 +331,8 @@ async function maintenanceReport(filters: ReportFilters): Promise<ReportResult> 
       inRange(task.createdAt, filters.fromDate, filters.toDate) &&
       (!filters.status || task.status === filters.status),
   );
-  const count = (status: MaintenanceStatus) => scoped.filter((task) => task.status === status).length;
+  const count = (status: MaintenanceStatus) =>
+    scoped.filter((task) => task.status === status).length;
   const estimated = scoped.reduce((sum, task) => sum + (task.estimatedCost ?? 0), 0);
   const actual = scoped.reduce((sum, task) => sum + (task.actualCost ?? 0), 0);
   return result(

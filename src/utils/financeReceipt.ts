@@ -1,7 +1,15 @@
+import { workflowRequest } from '@/services/http/workflows';
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, type Payment } from '@/types/finance';
 import { formatINR } from '@/utils/format';
 
-export function downloadReceipt(payment: Payment): void {
+export async function downloadReceipt(record: Payment): Promise<void> {
+  let payment: Payment;
+  try {
+    payment = await workflowRequest<Payment>('get',`/finance/payments/${encodeURIComponent(record.id)}/receipt`);
+  } catch (cause) {
+    window.alert(cause instanceof Error ? cause.message : 'Unable to load receipt. Please retry.');
+    return;
+  }
   const content = [
     'StayOps Receipt',
     `Receipt: ${payment.receiptNumber}`,

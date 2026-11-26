@@ -1,3 +1,4 @@
+import { financeService } from '@/services/finance/financeService';
 /* eslint @typescript-eslint/no-unused-vars: ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }] -- Legacy arguments are retained for callers; authorization comes from the API. */
 import { workflowList, workflowRequest } from '@/services/http/workflows';
 import { roomService } from '@/services/room/roomService';
@@ -30,7 +31,7 @@ export const tenantService = {
   getTenantSummary(_propertyIds?: string[]): Promise<TenantSummary> { return workflowRequest('get', '/tenants/summary'); },
   getTenantActivity(id: string, _propertyIds?: string[]): Promise<TenantActivityEvent[]> { return workflowRequest('get', `/tenants/${encodeURIComponent(id)}/activity`); },
   getTenantDocuments(id: string, _propertyIds?: string[]): Promise<TenantDocument[]> { return workflowRequest('get', `/tenants/${encodeURIComponent(id)}/documents`); },
-  getTenantPaymentsSummary(_id: string, _propertyIds?: string[]): Promise<TenantPaymentsSummary> { return unavailable('Payments'); },
+  async getTenantPaymentsSummary(id: string, _propertyIds?: string[]): Promise<TenantPaymentsSummary> { const [tenant, summary] = await Promise.all([this.getTenantById(id),financeService.getTenantFinancialSummary(id)]); return {monthlyRent:tenant.roomRent ?? 0,paidThisMonth:summary.currentMonthPaid,outstanding:summary.currentDue,securityDeposit:summary.securityDeposit}; },
   getTenantComplaintsSummary(_id: string, _propertyIds?: string[]): Promise<TenantComplaintsSummary> { return unavailable('Complaints'); },
   getTenantVisitorsSummary(_id: string, _propertyIds?: string[]): Promise<TenantVisitorsSummary> { return unavailable('Visitors'); },
   getTenantLeaveSummary(_id: string, _propertyIds?: string[]): Promise<TenantLeaveSummary> { return unavailable('Leave'); },

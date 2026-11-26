@@ -29,7 +29,7 @@ export function RefundPaymentModal({ open, payment, submitting, onClose, onSubmi
     <Modal
       key={payment?.id ?? 'refund-closed'}
       open={open}
-      title="Refund payment"
+      title="Record completed refund"
       onClose={onClose}
       footer={
         <>
@@ -37,7 +37,7 @@ export function RefundPaymentModal({ open, payment, submitting, onClose, onSubmi
             Cancel
           </Button>
           <Button variant="danger" onClick={() => void submit()} disabled={submitting || !payment}>
-            {submitting ? 'Refunding…' : `Refund ${payment ? formatINR(payment.amount) : ''}`}
+            {submitting ? 'Saving…' : `Record refund ${payment ? formatINR(payment.amount) : ''}`}
           </Button>
         </>
       }
@@ -45,7 +45,7 @@ export function RefundPaymentModal({ open, payment, submitting, onClose, onSubmi
       {payment ? (
         <div className="space-y-4">
           <p className="text-sm text-text">
-            Refund {formatINR(payment.amount)} for {payment.paymentNumber}? The invoice outstanding will increase
+            Record an already completed refund of {formatINR(payment.amount)} for {payment.paymentNumber}. The invoice outstanding will increase
             accordingly.
           </p>
           <Textarea

@@ -31,7 +31,7 @@ export function TenantCheckoutModal({ open, tenant, onClose, onComplete }: Tenan
     <Modal open={open} title={tenant ? `Checkout · ${tenant.fullName}` : 'Checkout'} onClose={saving ? () => {} : onClose}
       footer={<><Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button><Button variant="danger" onClick={() => void checkout()} disabled={saving || !tenant || !moveOutDate || tenant.status === 'CHECKED_OUT'}>{saving ? 'Checking out…' : 'Confirm checkout'}</Button></>}>
       <div className="space-y-4">
-        <p className="typo-secondary">Checkout saves the move-out date and releases the bed in one transaction. Final dues, deposit settlement and document closure are not connected yet.</p>
+        <p className="typo-secondary">Checkout saves the move-out date and releases the bed in one transaction. Invoices, outstanding dues and payment history are preserved. Deposit settlement and document closure are not automated.</p>
         <DateInput label="Move-out date" name="moveOutDate" value={moveOutDate} onChange={(event) => setMoveOutDate(event.target.value)} required />
         {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       </div>

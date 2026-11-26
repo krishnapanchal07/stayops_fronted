@@ -5,8 +5,9 @@
 StayOps is a role-based PG / Hostel management platform.
 
 The frontend includes the design system, layouts, API-backed authentication,
-RBAC and protected routing. Business modules continue to use their existing mock
-services. See [backend setup](../Backend/README.md) for PostgreSQL, migrations,
+RBAC and protected routing. Authentication, inquiries, tenants, staff, properties,
+inventory and finance use FastAPI/PostgreSQL. Unfinished operational modules retain
+their isolated legacy services. See [backend setup](../Backend/README.md) for PostgreSQL, migrations,
 SMTP, environment settings, and secure administrator bootstrap.
 
 ## Commands
@@ -58,8 +59,8 @@ document closure remain unavailable. Payments, complaints, visitors, leave,
 notices and roommate data are not fabricated for persistent tenants. Legacy mock
 modules/stores remain separate; they have not been migrated in this phase.
 
-Run `npm.cmd run test:workflows` in addition to auth/discovery tests, lint and build.
-Backend pytest executes the live service tests against isolated PostgreSQL.
+Run `npm.cmd run build` and `npm.cmd run lint`. Backend pytest uses isolated PostgreSQL.
+The former temporary frontend test harness was removed.
 
 ## Phase 2C — Persistent Staff Management
 
@@ -85,8 +86,7 @@ Deactivate disables login and revokes sessions. Activate enables login without
 restoring old sessions. On leave preserves existing enabled/disabled access.
 Accounts created inactive must be activated and sent a fresh setup invitation.
 
-Run `npm.cmd run test:staff` alongside auth/discovery/workflow tests, lint and
-build. Backend pytest runs the live staff setup/login regression against isolated
+Run `npm.cmd run build` and `npm.cmd run lint`. Backend pytest runs staff regressions against isolated
 PostgreSQL with mocked SMTP. See Backend/README.md for endpoints, file list,
 transaction guarantees, migration and remaining development-inventory limits.
 # Phase 3 property integration
@@ -125,3 +125,74 @@ beds, availability, allocation and public discovery. See `../Backend/README.md`,
 migration, endpoint, mock-audit, browser-test and limitations report. Earlier
 Phase 3 notes about a transitional room catalog are superseded. No permanent
 frontend QA harness was added.
+
+## Phase 5 — persistent finance (26 November 2026)
+
+Apply backend revision `0006_finance` after `0005_inventory`. Invoices, line items,
+payments, expenses, outstanding dues, receipts, financial reports and finance
+statistics now use PostgreSQL through the existing Axios/refresh client. There is
+no runtime finance fixture, browser business store, fake API wait or mock fallback.
+Earlier notes saying tenant payments are unconnected are superseded by this section.
+
+The existing invoice/payment/expense registers retain their cards, filters,
+modals and detail routes. `useFinanceTable` uses debounced search, backend sorting,
+20-row pages and the existing DataTable server controls. The tenant portal has
+separately paginated ledger and invoice tables; every payment installment is shown.
+The shared async hook now hides responses belonging to previous filters/records.
+Forms preserve values on API validation errors and disable repeated submissions.
+Creation requests retain an idempotency key for retries after ambiguous failures.
+
+Finance property choices use `/finance/options/properties`; tenant choices use
+`/finance/options/tenants?propertyId=...`; payment choices use scoped open invoices
+for the selected tenant. Accountants can use these choices without unrelated tenant
+management permissions. Property changes clear tenant/invoice/amount selections;
+tenant changes clear invoice/amount; request keys suppress stale option responses.
+Edit forms keep their selected values, including invoice identity snapshots.
+The rent preview comes from the canonical agreed tenant rent; the server independently
+validates and calculates the submitted line items and adjustments.
+
+Owner/Super Admin and Accountant dashboards have property/date finance filters.
+Financial charts and reports have no fixture fallback on empty results. Property
+monthly revenue is the current month's successful receipts; unauthorized roles
+receive no financial value. Tenant dashboards, profile finance summaries, invoices,
+receipts and installment history use trusted account-to-tenant linkage.
+
+Tenants cannot create successful payments. The former simulated Pay Now flow was
+removed; tenants contact the property office and authorized staff record receipts.
+Refund controls record a refund already completed outside the application; they
+perform no money transfer. Expense cancellation retains the record and removes it
+from paid expense totals. Checkout preserves invoices, outstanding dues and payment
+history while releasing the bed. Receipts preserve saved tenant/property/room names
+and download fresh authorized payment data from the receipt endpoint.
+
+Money displays preserve paise. Form date defaults and backend finance calculations
+use Asia/Kolkata. Large dialogs scroll within the viewport and keep their action
+buttons reachable. Each register row has a single keyboard-accessible action button.
+
+Changed areas: `services/finance/{api,financeService,invoiceService,paymentService,
+expenseService}.ts`, `hooks/{useFinanceTable,useAsyncResource}.ts`, all finance
+pages and forms, `FinanceFilters.tsx`, tenant Payments/Dashboard pages, admin tenant
+financial summary, dashboard/report/tenant services, finance types/calculation/
+validation/receipt helpers, shared Modal and currency formatting. The backend README
+contains the full endpoint, integrity, migration, backup, mock audit and verification
+report.
+
+Deleted after consumer verification: invoice/payment/expense JSON fixtures,
+`financeStore.ts`, unused Accountant/Tenant dashboard fixtures and `PayNowModal.tsx`.
+The Admin dashboard fixture retains only unrelated operational scaffolding; its
+finance fixture fields were removed. Other unfinished operational mock services
+(complaints, visitors, leave, notices, documents, support and maintenance) remain
+outside this migration. Reusable property/inventory demo assets were preserved.
+
+Production build and lint pass. The backend suite passed 110 tests against
+isolated PostgreSQL, including 17 finance cases.
+The latest browser rerun confirmed invoice, partial payment and expense persistence
+after refresh, receipt preview, and keyboard access in all three registers. Direct
+SQL checks matched the amounts in the browser. Earlier real-browser checks covered
+invoice create/edit/refresh, partial/full cash payments, receipts, expense create/
+edit/cancel/refresh, dependent options/empty states, owner pagination, accountant
+scope, owner/cross-tenant denial, unauthorized Security routes, checkout with dues,
+post-checkout history, finance reports, and mobile/tablet/desktop observations.
+Not all 91 requested browser scenarios were individually exercised; see the backend
+README for precise remaining limitations. No frontend test framework, harness,
+package command or new package dependency was added.

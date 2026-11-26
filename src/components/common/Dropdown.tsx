@@ -1,5 +1,6 @@
 import { cn } from '@/utils/cn';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { IconButton } from '@/components/ui/IconButton';
 
 export interface DropdownItem {
   id: string;
@@ -11,11 +12,12 @@ export interface DropdownItem {
 
 interface DropdownProps {
   trigger: ReactNode;
+  iconTriggerLabel?: string;
   items: DropdownItem[];
   align?: 'left' | 'right';
 }
 
-export function Dropdown({ trigger, items, align = 'right' }: DropdownProps) {
+export function Dropdown({ trigger, iconTriggerLabel, items, align = 'right' }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -43,22 +45,36 @@ export function Dropdown({ trigger, items, align = 'right' }: DropdownProps) {
 
   return (
     <div ref={containerRef} className="relative">
-      <div
-        role="button"
-        tabIndex={0}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={menuId}
-        onClick={() => setOpen((current) => !current)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            setOpen((current) => !current);
-          }
-        }}
-      >
-        {trigger}
-      </div>
+      {iconTriggerLabel ? (
+        <IconButton
+          label={iconTriggerLabel}
+          variant="ghost"
+          size="sm"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={open ? menuId : undefined}
+          onClick={() => setOpen((current) => !current)}
+        >
+          {trigger}
+        </IconButton>
+      ) : (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={menuId}
+          onClick={() => setOpen((current) => !current)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setOpen((current) => !current);
+            }
+          }}
+        >
+          {trigger}
+        </div>
+      )}
       {open ? (
         <div
           id={menuId}

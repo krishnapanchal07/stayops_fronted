@@ -158,7 +158,7 @@ export function TenantDetailsPage() {
 
       {status === 'success' && tenant ? (
         <>
-          <p className="typo-helper mb-4">Tenant profiles and allocations are persistent. Payments, complaints, visitors, leave and document storage are not connected to these profiles yet.</p>
+          <p className="typo-helper mb-4">Tenant profiles, allocations and financial records are persistent. Complaints, visitors, leave and document storage are not connected to these profiles yet.</p>
           <PageHeader
             title={tenant.fullName}
             description={tenant.tenantCode}
