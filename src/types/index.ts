@@ -54,30 +54,6 @@ export type {
   ComplaintSummary,
 } from '@/types/complaint';
 export type {
-  Visitor,
-  VisitorFilters,
-  VisitorFormValues,
-  VisitorPass,
-  VisitorStatus,
-  VisitorSummary,
-} from '@/types/visitor';
-export type {
-  GatePass,
-  GatePassStatus,
-  LeaveFilters,
-  LeaveFormValues,
-  LeaveRequest,
-  LeaveStatus,
-  LeaveSummary,
-  LeaveType,
-} from '@/types/leave';
-export type {
-  EntryExitFilters,
-  EntryExitKind,
-  EntryExitLog,
-  EntryExitStatus,
-} from '@/types/entryExit';
-export type {
   CompleteTaskValues,
   MaintenanceFilters,
   MaintenanceStatus,
@@ -103,36 +79,14 @@ export type {
   Tenant,
   TenantActivityEvent,
   TenantComplaintsSummary,
-  TenantDocument,
   TenantFilters,
   TenantFormValues,
   TenantGender,
-  TenantLeaveSummary,
   TenantPaymentsSummary,
   TenantSource,
   TenantStatus,
   TenantSummary,
-  TenantVisitorsSummary,
 } from '@/types/tenant';
-export type {
-  Notice,
-  NoticeAudience,
-  NoticeCategory,
-  NoticeFilters,
-  NoticeFormValues,
-  NoticePriority,
-  NoticeStatus,
-  NoticeSummary,
-  NoticeWithRead,
-} from '@/types/notice';
-export type {
-  DocumentCategory,
-  DocumentFilters,
-  DocumentFormValues,
-  DocumentStatus,
-  DocumentVisibility,
-  StayDocument,
-} from '@/types/document';
 export type {
   Staff,
   StaffDepartment,
@@ -143,13 +97,6 @@ export type {
   StaffSummary,
 } from '@/types/staff';
 export type {
-  AuditAction,
-  AuditFilters,
-  AuditLog,
-  AuditResourceType,
-  AuditSummary,
-} from '@/types/audit';
-export type {
   ReportBreakdownRow,
   ReportFilters,
   ReportMetric,
@@ -158,15 +105,9 @@ export type {
 } from '@/types/report';
 export type {
   ChangePasswordValues,
-  NotificationPreferences,
   RoommateInfo,
-  SupportComment,
-  SupportFilters,
-  SupportFormValues,
-  SupportRequest,
-  SupportStatus,
   TenantProfileFormValues,
-} from '@/types/support';
+} from '@/types/profile';
 export type {
   AlertVariant,
   BadgeVariant,

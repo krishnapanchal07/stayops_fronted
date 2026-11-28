@@ -1,11 +1,7 @@
 import type { ComplaintAttachment } from '@/types/complaint';
 
-export const COMPLAINT_FILE_MAX_BYTES = 5 * 1024 * 1024;
+export const COMPLAINT_FILE_MAX_BYTES = 4 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
-function createAttachmentId(): string {
-  return `att-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
 
 export function isPreviewableImage(fileType: string): boolean {
   return IMAGE_TYPES.includes(fileType) || fileType.startsWith('image/');
@@ -13,7 +9,8 @@ export function isPreviewableImage(fileType: string): boolean {
 
 export function createComplaintAttachment(file: File, uploadedBy: string): ComplaintAttachment {
   return {
-    id: createAttachmentId(),
+    id: crypto.randomUUID(),
+    file,
     complaintId: '',
     fileName: file.name,
     fileType: file.type || 'application/octet-stream',
@@ -25,7 +22,9 @@ export function createComplaintAttachment(file: File, uploadedBy: string): Compl
 }
 
 export function validateComplaintFile(file: File, existing: ComplaintAttachment[]): string | null {
-  if (file.size > COMPLAINT_FILE_MAX_BYTES) return 'Keep each file under 5 MB.';
+  if (!IMAGE_TYPES.includes(file.type)) return 'Select a JPG, PNG or WebP image.';
+  if (!file.size || file.size >= COMPLAINT_FILE_MAX_BYTES) return 'Select an image smaller than 4 MiB.';
+  if (existing.length >= 4) return 'Attach at most four images.';
   if (existing.some((item) => item.fileName === file.name && item.fileSize === file.size)) {
     return 'This file is already added.';
   }

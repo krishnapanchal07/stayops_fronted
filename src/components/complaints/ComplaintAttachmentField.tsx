@@ -3,6 +3,7 @@ import type { ComplaintAttachment } from '@/types/complaint';
 import { addComplaintAttachments, isPreviewableImage, removeComplaintAttachment } from '@/utils/complaintAttachments';
 import { formatFileSize } from '@/utils/format';
 import { Paperclip, X } from 'lucide-react';
+import { useRef } from 'react';
 
 interface ComplaintAttachmentFieldProps {
   attachments: ComplaintAttachment[];
@@ -19,28 +20,37 @@ export function ComplaintAttachmentField({
   onError,
   disabled,
 }: ComplaintAttachmentFieldProps) {
+  const fileInput = useRef<HTMLInputElement>(null);
+
   return (
     <div>
       <p className="mb-2 text-sm font-medium text-text">Attachments</p>
-      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background px-4 py-6 text-center">
+      <button
+        type="button"
+        disabled={disabled}
+        className="flex w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background px-4 py-6 text-center disabled:cursor-not-allowed"
+        onClick={() => fileInput.current?.click()}
+      >
         <Paperclip className="mb-2 h-5 w-5 text-primary" />
-        <span className="text-sm font-medium text-text">Add images or files</span>
-        <span className="typo-helper mt-1">JPG, PNG, WEBP or documents · max 5 MB</span>
-        <input
-          type="file"
-          multiple
-          className="sr-only"
-          disabled={disabled}
-          onChange={(event) => {
-            const files = event.target.files;
-            if (!files?.length) return;
-            const result = addComplaintAttachments(attachments, files, uploadedBy);
-            if (result.errors.length > 0) onError?.(result.errors[0] ?? 'Unable to add file.');
-            onChange(result.attachments);
-            event.target.value = '';
-          }}
-        />
-      </label>
+        <span className="text-sm font-medium text-text">Add images</span>
+        <span className="typo-helper mt-1">Up to four JPG, PNG or WebP images, each under 4 MiB</span>
+      </button>
+      <input
+        ref={fileInput}
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp"
+        hidden
+        disabled={disabled}
+        onChange={(event) => {
+          const files = event.target.files;
+          if (!files?.length) return;
+          const result = addComplaintAttachments(attachments, files, uploadedBy);
+          if (result.errors.length > 0) onError?.(result.errors[0] ?? 'Unable to add file.');
+          onChange(result.attachments);
+          event.target.value = '';
+        }}
+      />
 
       {attachments.length > 0 ? (
         <ul className="mt-3 space-y-2">

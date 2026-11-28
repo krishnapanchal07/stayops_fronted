@@ -16,15 +16,13 @@ import { BED_STATUS_LABELS, ROOM_TYPE_LABELS, SHARING_TYPE_LABELS } from '@/type
 import { TENANT_STATUS_LABELS } from '@/types/tenant';
 import { formatINR, formatPhone, formatShortDate } from '@/utils/format';
 import { calculateRoomOccupancy } from '@/utils/roomStats';
-import { BedDouble, CalendarClock, CreditCard, MessageSquareWarning, UserPlus } from 'lucide-react';
+import { BedDouble, CreditCard, MessageSquareWarning } from 'lucide-react';
 import { useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const actions = [
   { id: 'pay', label: 'Pay Rent', icon: CreditCard, path: PATHS.tenant.payments },
   { id: 'complaint', label: 'Raise Complaint', icon: MessageSquareWarning, path: PATHS.tenant.complaints },
-  { id: 'visitor', label: 'Add Visitor', icon: UserPlus, path: PATHS.tenant.visitors },
-  { id: 'leave', label: 'Apply Leave', icon: CalendarClock, path: PATHS.tenant.leave },
 ] as const;
 
 export function MyRoomPage() {

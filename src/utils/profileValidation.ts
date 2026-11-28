@@ -1,29 +1,13 @@
 import {
-  SupportCategory,
   type ChangePasswordValues,
-  type SupportFormValues,
   type TenantProfileFormValues,
-} from '@/types/support';
+} from '@/types/profile';
 import type { Tenant } from '@/types/tenant';
 
-export type SupportFormErrors = Partial<Record<keyof SupportFormValues, string>>;
 export type TenantProfileFormErrors = Partial<Record<keyof TenantProfileFormValues, string>>;
 export type ChangePasswordErrors = Partial<Record<keyof ChangePasswordValues, string>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export function emptySupportForm(): SupportFormValues {
-  return { category: '', subject: '', description: '' };
-}
-
-export function validateSupportForm(values: SupportFormValues): SupportFormErrors {
-  const errors: SupportFormErrors = {};
-  if (!values.category || !(values.category in SupportCategory))
-    errors.category = 'Select a category.';
-  if (!values.subject.trim()) errors.subject = 'Subject is required.';
-  if (!values.description.trim()) errors.description = 'Describe the issue.';
-  return errors;
-}
 
 export function toTenantProfileForm(tenant: Tenant): TenantProfileFormValues {
   return {

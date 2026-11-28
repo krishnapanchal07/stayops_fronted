@@ -1,5 +1,4 @@
 import axios from 'axios';
-import permissionsData from '@/mock/permissions.json';
 import {
   applySession,
   clearSession,
@@ -66,7 +65,6 @@ export const authService = {
   },
   isAuthenticated: () => getSession() !== null,
   getUserPermissions: () => getSession()?.permissions ?? [],
-  getPermissionCatalog: () => permissionsData,
   async forgotPassword(email: string): Promise<string> {
     const { data } = await authClient.post<{ message: string }>('/auth/forgot-password', {
       email: email.trim().toLowerCase(),

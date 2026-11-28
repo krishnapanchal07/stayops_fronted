@@ -6,9 +6,55 @@ StayOps is a role-based PG / Hostel management platform.
 
 The frontend includes the design system, layouts, API-backed authentication,
 RBAC and protected routing. Authentication, inquiries, tenants, staff, properties,
-inventory and finance use FastAPI/PostgreSQL. Unfinished operational modules retain
-their isolated legacy services. See [backend setup](../Backend/README.md) for PostgreSQL, migrations,
-SMTP, environment settings, and secure administrator bootstrap.
+inventory, finance, complaints, and maintenance use FastAPI and PostgreSQL.
+See [backend setup](../Backend/README.md) for PostgreSQL, migrations, SMTP, environment
+settings, and secure administrator bootstrap.
+
+## Phase 6 complaint and maintenance operations
+
+Apply backend migration `0008_complaints` before starting the frontend. A tenant
+with a current allocation can raise a complaint from **Complaints**, attach photos,
+and follow its status and public comments. Super Admin, Owner, and Warden use their
+scoped complaint lists to create, review, assign, or escalate complaints as their
+permissions allow. The management form reads actual properties, buildings, floors,
+rooms, and eligible occupants. Assignment options load linked, active maintenance
+staff assigned to the complaint property.
+
+Technicians start and complete assigned work under **Maintenance**. Completion
+records the resolution, date, parts, and cost and resolves the linked complaint.
+Tenants can then confirm closure or reopen the complaint. The UI uses the server
+for search, filtering, sorting, pagination, dashboard counts, comments, timelines,
+and attachment access. A preview created during file selection is temporary.
+The saved image is fetched through the authenticated attachment endpoint.
+
+| Removed area | Retired routes and navigation |
+| --- | --- |
+| Visitors and entry/exit | `/admin/visitors`, `/warden/visitors`, `/tenant/visitors`, `/security/visitor-check-in`, `/security/visitor-check-out`, `/security/entry-exit-logs` |
+| Leave and gate passes | `/admin/leave-requests`, `/warden/leave-requests`, `/tenant/leave`, `/security/gate-passes` |
+| Notices and notifications | `/admin/notices`, `/warden/notices`, `/tenant/notices`, header notification panel, profile notification preferences |
+| Document management | `/admin/documents`, `/warden/documents`, `/tenant/documents` |
+| Support tickets | `/admin/support`, `/warden/support`, `/tenant/help/requests` |
+| Standalone audit and general reports | `/admin/audit-logs`, `/admin/reports`, `/accountant/reports` |
+
+The listed detail URLs were also retired. Finance Reports are under Finance at
+`/admin/finance/reports` and `/accountant/finance/reports`. Role routing, account
+profile and password changes, application feedback toasts, finance receipts and
+exports, and public PG discovery are still available. Security retains a dashboard
+and profile. Admin, Warden, Tenant, and Maintenance dashboards display scoped API
+data. Retired pages, services, stores, and fixtures were removed, along with the
+mock complaint and task stores. Earlier phase notes below are historical.
+
+### Phase 6 frontend verification
+
+`npm.cmd run build` and `npm.cmd run lint` passed. Vite reported its bundle size
+warning. Browser testing used real PostgreSQL data in a disposable environment.
+The tenant-to-technician workflow, closure after refresh, management location
+and tenant selectors, mobile layout, Security landing and profile, and an old
+visitor route were checked. The backend validates image upload and scoped reads
+in automated tests. The browser file chooser timed out, so photo selection and
+preview were unverified in the browser. The run covered part of the requested
+browser matrix. Additional role and filter combinations, tablet layout, and a
+fresh Razorpay checkout were outside the completed browser coverage.
 
 ## Commands
 

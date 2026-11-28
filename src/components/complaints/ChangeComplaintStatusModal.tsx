@@ -20,7 +20,8 @@ export function ChangeComplaintStatusModal({
   onClose,
   onSubmit,
 }: ChangeComplaintStatusModalProps) {
-  const options = complaint ? allowedComplaintTransitions(complaint.status) : [];
+  const options = complaint ? allowedComplaintTransitions(complaint.status)
+    .filter((status) => ['REVIEWED', 'IN_PROGRESS', 'REJECTED', 'CLOSED'].includes(status)) : [];
   const [status, setStatus] = useState<ComplaintStatus | ''>(options[0] ?? '');
 
   return (

@@ -1,7 +1,7 @@
 import { PasswordInput } from '@/components/forms/PasswordInput';
 import { Button } from '@/components/ui/Button';
-import type { ChangePasswordValues } from '@/types/support';
-import type { ChangePasswordErrors } from '@/utils/supportValidation';
+import type { ChangePasswordValues } from '@/types/profile';
+import type { ChangePasswordErrors } from '@/utils/profileValidation';
 
 interface ChangePasswordFormProps {
   values: ChangePasswordValues;

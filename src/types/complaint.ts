@@ -78,13 +78,6 @@ export const COMPLAINT_STATUS_LABELS: Record<ComplaintStatus, string> = {
   ESCALATED: 'Escalated',
 };
 
-export const SLA_HOURS: Record<ComplaintPriority, number> = {
-  LOW: 72,
-  MEDIUM: 48,
-  HIGH: 24,
-  URGENT: 4,
-};
-
 export const TERMINAL_COMPLAINT_STATUSES: ComplaintStatus[] = [
   ComplaintStatus.RESOLVED,
   ComplaintStatus.CLOSED,
@@ -92,6 +85,7 @@ export const TERMINAL_COMPLAINT_STATUSES: ComplaintStatus[] = [
 ];
 
 export interface ComplaintAttachment {
+  file?: File;
   id: string;
   complaintId: string;
   fileName: string;
@@ -169,6 +163,7 @@ export interface ComplaintFilters {
 }
 
 export interface ComplaintFormValues {
+  tenantId?: string;
   category: ComplaintCategory | '';
   title: string;
   description: string;

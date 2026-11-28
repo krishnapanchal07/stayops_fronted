@@ -26,29 +26,29 @@ export const PATHS = {
     inquiryDetail: '/admin/inquiries/:inquiryId',
     staff: '/admin/staff',
     staffDetail: '/admin/staff/:staffId',
-    visitors: '/admin/visitors',
-    visitorDetail: '/admin/visitors/:visitorId',
+
+
     complaints: '/admin/complaints',
     complaintDetail: '/admin/complaints/:complaintId',
     maintenance: '/admin/maintenance',
     maintenanceTaskDetail: '/admin/maintenance/:taskId',
-    leaveRequests: '/admin/leave-requests',
-    leaveDetail: '/admin/leave-requests/:leaveId',
+
+
     payments: '/admin/payments',
     paymentDetail: '/admin/payments/:paymentId',
     invoices: '/admin/invoices',
     invoiceDetail: '/admin/invoices/:invoiceId',
     expenses: '/admin/expenses',
     expenseDetail: '/admin/expenses/:expenseId',
-    notices: '/admin/notices',
-    noticeDetail: '/admin/notices/:noticeId',
-    documents: '/admin/documents',
-    documentDetail: '/admin/documents/:documentId',
-    support: '/admin/support',
-    supportDetail: '/admin/support/:requestId',
-    reports: '/admin/reports',
-    auditLogs: '/admin/audit-logs',
-    auditLogDetail: '/admin/audit-logs/:auditId',
+
+
+
+
+
+
+    reports: '/admin/finance/reports',
+
+
     settings: '/admin/settings',
     profile: '/admin/profile',
   },
@@ -64,16 +64,16 @@ export const PATHS = {
     roomDetail: '/warden/rooms/:roomId',
     complaints: '/warden/complaints',
     complaintDetail: '/warden/complaints/:complaintId',
-    visitors: '/warden/visitors',
-    visitorDetail: '/warden/visitors/:visitorId',
-    leaveRequests: '/warden/leave-requests',
-    leaveDetail: '/warden/leave-requests/:leaveId',
-    notices: '/warden/notices',
-    noticeDetail: '/warden/notices/:noticeId',
-    documents: '/warden/documents',
-    documentDetail: '/warden/documents/:documentId',
-    support: '/warden/support',
-    supportDetail: '/warden/support/:requestId',
+
+
+
+
+
+
+
+
+
+
     profile: '/warden/profile',
   },
 
@@ -87,17 +87,17 @@ export const PATHS = {
     expenses: '/accountant/expenses',
     expenseDetail: '/accountant/expenses/:expenseId',
     outstanding: '/accountant/outstanding-dues',
-    reports: '/accountant/reports',
+    reports: '/accountant/finance/reports',
     profile: '/accountant/profile',
   },
 
   security: {
     root: '/security',
     dashboard: '/security/dashboard',
-    checkIn: '/security/visitor-check-in',
-    checkOut: '/security/visitor-check-out',
-    gatePasses: '/security/gate-passes',
-    entryExitLogs: '/security/entry-exit-logs',
+
+
+
+
     profile: '/security/profile',
   },
 
@@ -124,18 +124,16 @@ export const PATHS = {
     paymentDetail: '/tenant/payments/receipts/:paymentId',
     complaints: '/tenant/complaints',
     complaintDetail: '/tenant/complaints/:complaintId',
-    visitors: '/tenant/visitors',
-    visitorDetail: '/tenant/visitors/:visitorId',
-    leave: '/tenant/leave',
-    leaveDetail: '/tenant/leave/:leaveId',
-    notices: '/tenant/notices',
-    noticeDetail: '/tenant/notices/:noticeId',
-    documents: '/tenant/documents',
-    documentDetail: '/tenant/documents/:documentId',
+
+
+
+
+
+
+
+
     profile: '/tenant/profile',
     help: '/tenant/help',
-    helpRequests: '/tenant/help/requests',
-    helpRequestDetail: '/tenant/help/requests/:requestId',
   },
 } as const;
 
@@ -207,72 +205,12 @@ export function tenantComplaintDetailPath(complaintId: string): string {
   return `/tenant/complaints/${complaintId}`;
 }
 
-export function adminVisitorDetailPath(visitorId: string): string {
-  return `/admin/visitors/${visitorId}`;
-}
-
-export function wardenVisitorDetailPath(visitorId: string): string {
-  return `/warden/visitors/${visitorId}`;
-}
-
-export function tenantVisitorDetailPath(visitorId: string): string {
-  return `/tenant/visitors/${visitorId}`;
-}
-
-export function adminLeaveDetailPath(leaveId: string): string {
-  return `/admin/leave-requests/${leaveId}`;
-}
-
-export function wardenLeaveDetailPath(leaveId: string): string {
-  return `/warden/leave-requests/${leaveId}`;
-}
-
-export function tenantLeaveDetailPath(leaveId: string): string {
-  return `/tenant/leave/${leaveId}`;
-}
-
 export function maintenanceTaskDetailPath(taskId: string): string {
   return `/maintenance/tasks/${taskId}`;
 }
 
 export function adminMaintenanceTaskDetailPath(taskId: string): string {
   return `/admin/maintenance/${taskId}`;
-}
-
-export function adminNoticeDetailPath(noticeId: string): string {
-  return `/admin/notices/${noticeId}`;
-}
-
-export function wardenNoticeDetailPath(noticeId: string): string {
-  return `/warden/notices/${noticeId}`;
-}
-
-export function tenantNoticeDetailPath(noticeId: string): string {
-  return `/tenant/notices/${noticeId}`;
-}
-
-export function adminDocumentDetailPath(documentId: string): string {
-  return `/admin/documents/${documentId}`;
-}
-
-export function wardenDocumentDetailPath(documentId: string): string {
-  return `/warden/documents/${documentId}`;
-}
-
-export function tenantDocumentDetailPath(documentId: string): string {
-  return `/tenant/documents/${documentId}`;
-}
-
-export function adminSupportDetailPath(requestId: string): string {
-  return `/admin/support/${requestId}`;
-}
-
-export function wardenSupportDetailPath(requestId: string): string {
-  return `/warden/support/${requestId}`;
-}
-
-export function tenantSupportDetailPath(requestId: string): string {
-  return `/tenant/help/requests/${requestId}`;
 }
 
 /**

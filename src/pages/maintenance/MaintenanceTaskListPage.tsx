@@ -2,29 +2,26 @@ import { Card } from '@/components/common/Card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { StatusPill } from '@/components/dashboard/StatusPill';
-import { EmptyState } from '@/components/feedback/EmptyState';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { DateInput } from '@/components/forms/DateInput';
+import { TextInput } from '@/components/forms/TextInput';
+import { useFinanceTable } from '@/hooks/useFinanceTable';
 import { Select } from '@/components/forms/Select';
 import { DataTable } from '@/components/tables/DataTable';
 import { Button } from '@/components/ui/Button';
-import { Permission } from '@/constants/permissions';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useHasPermission } from '@/hooks/useHasPermission';
 import {
   PATHS,
   adminMaintenanceTaskDetailPath,
   maintenanceTaskDetailPath,
 } from '@/routes/paths';
-import { maintenanceService } from '@/services/maintenance/maintenanceService';
 import { propertyService } from '@/services/property/propertyService';
 import { COMPLAINT_PRIORITY_LABELS, ComplaintPriority } from '@/types/complaint';
 import { MAINTENANCE_STATUS_LABELS, MaintenanceStatus, type MaintenanceFilters, type MaintenanceTask } from '@/types/maintenance';
 import type { DataTableColumn } from '@/types/ui';
-import { emptyMaintenanceFilters, filterMaintenanceTasks } from '@/utils/maintenanceRules';
+import { emptyMaintenanceFilters } from '@/utils/maintenanceRules';
 import { formatDateTime, formatShortDate } from '@/utils/format';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 function taskHref(pathname: string, id: string): string {
@@ -34,21 +31,11 @@ function taskHref(pathname: string, id: string): string {
 export function MaintenanceTaskListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = useCurrentUser();
   const isAdmin = location.pathname.startsWith('/admin');
   const isHistory = location.pathname.includes('history');
   const isAssigned = location.pathname.includes('assigned-complaints');
-  const canViewMaintenance = useHasPermission(Permission.MAINTENANCE_VIEW);
-  const canViewAll = isAdmin && canViewMaintenance;
   const homeHref = isAdmin ? PATHS.admin.dashboard : PATHS.maintenance.dashboard;
-
-  const loader = useCallback(() => {
-    if (canViewAll) return maintenanceService.getMaintenanceTasks();
-    if (user) return maintenanceService.getMaintenanceTasksByStaff(user.id);
-    return Promise.resolve([]);
-  }, [canViewAll, user]);
   const propertiesLoader = useCallback(() => propertyService.getProperties(), []);
-  const { data, status, error, reload } = useAsyncResource(loader);
   const { data: properties } = useAsyncResource(propertiesLoader);
 
   const [filters, setFilters] = useState<MaintenanceFilters>(() => {
@@ -58,8 +45,8 @@ export function MaintenanceTaskListPage() {
     return base;
   });
 
-  const tasks = useMemo(() => data ?? [], [data]);
-  const filtered = useMemo(() => filterMaintenanceTasks(tasks, filters), [filters, tasks]);
+  const table = useFinanceTable<MaintenanceTask>('/maintenance/tasks', { ...filters });
+  const { status, error, reload } = table;
 
   const title = isHistory ? 'Maintenance History' : isAssigned ? 'Assigned Complaints' : 'Maintenance Tasks';
 
@@ -119,7 +106,7 @@ export function MaintenanceTaskListPage() {
         <ErrorState description={error ?? 'Unable to load maintenance tasks.'} onRetry={reload} />
       ) : null}
 
-      {status === 'success' ? (
+      {status !== 'error' ? (
         <div className="space-y-5">
           <div className="grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 xl:grid-cols-4">
             <Select
@@ -170,15 +157,11 @@ export function MaintenanceTaskListPage() {
             />
           </div>
 
-          {filtered.length === 0 ? (
-            <EmptyState
-              title={isAdmin ? 'No tasks found.' : 'No tasks assigned.'}
-              description={isAdmin ? 'Try adjusting your filters.' : "You're all caught up."}
-            />
-          ) : (
+          <TextInput name="taskSearch" label="Search tasks" value={table.search} onChange={(event) => table.setSearch(event.target.value)} />
             <DataTable
               columns={columns}
-              data={filtered}
+              data={table.data?.items ?? []}
+              {...table.tableProps}
               rowKey={(row) => row.id}
               searchPlaceholder="Search task ID, complaint, room"
               emptyTitle={isAdmin ? 'No tasks found.' : 'No tasks assigned.'}
@@ -204,7 +187,6 @@ export function MaintenanceTaskListPage() {
                 </Card>
               )}
             />
-          )}
         </div>
       ) : null}
     </div>

@@ -1,5 +1,4 @@
 import { Card, CardHeader } from '@/components/common/Card';
-import { Badge } from '@/components/common/Badge';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -11,25 +10,21 @@ import { PATHS } from '@/routes/paths';
 import { dashboardService } from '@/services/dashboard/dashboardService';
 import type { TenantDashboardData } from '@/types/dashboard';
 import { formatINR, greetingForHour } from '@/utils/format';
-import { BedDouble, Bell, CalendarClock, CreditCard, MessageSquareWarning, Search, UserPlus } from 'lucide-react';
+import { BedDouble, CreditCard, MessageSquareWarning, Search } from 'lucide-react';
 import { useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const STAT_LINKS: Record<string, string> = {
   room: PATHS.tenant.myRoom,
-  notices: PATHS.tenant.notices,
   due: PATHS.tenant.payments,
   complaints: PATHS.tenant.complaints,
 };
 
 const quickActions = [
   { id: 'my-room', label: 'My Room', icon: BedDouble, path: PATHS.tenant.myRoom },
-  { id: 'notices', label: 'Notices', icon: Bell, path: PATHS.tenant.notices },
   { id: 'find-room', label: 'Find Room', icon: Search, path: PATHS.tenant.findRoom },
   { id: 'pay', label: 'Pay Rent', icon: CreditCard, path: PATHS.tenant.payments },
   { id: 'complaint', label: 'Raise Complaint', icon: MessageSquareWarning, path: PATHS.tenant.complaints },
-  { id: 'visitor', label: 'Add Visitor', icon: UserPlus, path: PATHS.tenant.visitors },
-  { id: 'leave', label: 'Apply Leave', icon: CalendarClock, path: PATHS.tenant.leave },
 ] as const;
 
 export function TenantDashboardPage() {
@@ -150,28 +145,6 @@ export function TenantDashboardPage() {
               </ul>
             </Card>
 
-            <Card>
-              <CardHeader
-                title="Recent Notices"
-                action={
-                  <Link to={PATHS.tenant.notices} className="text-sm font-medium text-primary">
-                    View All
-                  </Link>
-                }
-              />
-              <p className="typo-secondary">Notices are not connected to your tenant profile yet.</p>
-              <ul className="space-y-3">
-                {data.recentNotices.map((item) => (
-                  <li key={item.id} className="flex items-start justify-between gap-3">
-                    <Link to={`${PATHS.tenant.notices}/${item.id}`} className="min-w-0">
-                      <p className="text-sm font-semibold">{item.title}</p>
-                      <p className="typo-helper">{item.date}</p>
-                    </Link>
-                    {item.isNew ? <Badge variant="warning">New</Badge> : null}
-                  </li>
-                ))}
-              </ul>
-            </Card>
           </div>
         </div>
       ) : null}

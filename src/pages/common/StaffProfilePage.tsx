@@ -5,7 +5,6 @@ import { StatusPill } from '@/components/dashboard/StatusPill';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm';
-import { NotificationPreferencesForm } from '@/components/profile/NotificationPreferencesForm';
 import { TextInput } from '@/components/forms/TextInput';
 import { TenantProfileImageField } from '@/components/tenants/TenantProfileImageField';
 import { Button } from '@/components/ui/Button';
@@ -18,8 +17,8 @@ import { staffService } from '@/services/staff/staffService';
 import { profileService } from '@/services/profile/profileService';
 import { propertyService } from '@/services/property/propertyService';
 import { sessionApplied } from '@/store/slices/authSlice';
-import type { ChangePasswordValues, NotificationPreferences } from '@/types/support';
-import { validateChangePassword, type ChangePasswordErrors } from '@/utils/supportValidation';
+import type { ChangePasswordValues } from '@/types/profile';
+import { validateChangePassword, type ChangePasswordErrors } from '@/utils/profileValidation';
 import { useCallback, useState } from 'react';
 
 const emptyPassword: ChangePasswordValues = {
@@ -41,16 +40,12 @@ export function StaffProfilePage() {
       await staffService.acceptInvitation(token);
       window.history.replaceState(null, '', window.location.pathname);
       window.location.assign('/login');
-      return { preferences: await profileService.getNotificationPreferences(userId), assignedNames: [] };
     }
-    const [preferences, properties] = await Promise.all([
-      profileService.getNotificationPreferences(userId),
-      propertyService.getProperties(),
-    ]);
+    const properties = await propertyService.getProperties();
     const assignedNames = (user?.propertyIds ?? [])
       .map((id) => properties.find((property) => property.id === id)?.name)
       .filter((name): name is string => Boolean(name));
-    return { preferences, assignedNames };
+    return { assignedNames };
   }, [user?.propertyIds, userId]);
 
   const { data, status, error, reload } = useAsyncResource(loader);
@@ -59,12 +54,10 @@ export function StaffProfilePage() {
   const [nameError, setNameError] = useState<string | undefined>();
   const [passwordValues, setPasswordValues] = useState(emptyPassword);
   const [passwordErrors, setPasswordErrors] = useState<ChangePasswordErrors>({});
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [saving, setSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   const displayName = name || user?.name || '';
-  const prefs = preferences ?? data?.preferences ?? null;
 
   const saveProfile = async () => {
     if (!user) return;
@@ -112,12 +105,6 @@ export function StaffProfilePage() {
     }
   };
 
-  const savePrefs = async (next: NotificationPreferences) => {
-    setPreferences(next);
-    await profileService.saveNotificationPreferences(next);
-    toast('success', 'Notification preferences saved.');
-  };
-
   if (!user) {
     return (
       <div>
@@ -131,7 +118,7 @@ export function StaffProfilePage() {
     <div>
       <PageHeader
         title="My Profile"
-        description="Manage your account details, photo and notification settings."
+        description="Manage your account details and photo."
         breadcrumbs={[{ label: 'Home', href: getHomePath(user.role) }, { label: 'My Profile' }]}
       />
 
@@ -140,7 +127,7 @@ export function StaffProfilePage() {
         <ErrorState title="Profile information unavailable." description={error ?? undefined} onRetry={reload} />
       ) : null}
 
-      {status === 'success' && data && prefs ? (
+      {status === 'success' && data ? (
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-5 lg:col-span-2">
             <Card>
@@ -195,10 +182,6 @@ export function StaffProfilePage() {
               />
             </Card>
 
-            <Card>
-              <CardHeader title="Notification preferences" />
-              <NotificationPreferencesForm values={prefs} onChange={(next) => void savePrefs(next)} />
-            </Card>
           </div>
 
           <div className="space-y-5">

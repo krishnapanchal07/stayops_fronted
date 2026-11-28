@@ -3,7 +3,7 @@ import { Textarea } from '@/components/forms/Textarea';
 import { Button } from '@/components/ui/Button';
 import type { ComplaintComment } from '@/types/complaint';
 import { formatDateTime } from '@/utils/format';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 interface ComplaintCommentsProps {
   comments: ComplaintComment[];
@@ -12,7 +12,7 @@ interface ComplaintCommentsProps {
   placeholder?: string;
   submitLabel?: string;
   emptyLabel?: string;
-  onSubmit: (message: string) => void;
+  onSubmit: (message: string) => Promise<boolean>;
 }
 
 export function ComplaintComments({
@@ -25,6 +25,7 @@ export function ComplaintComments({
   onSubmit,
 }: ComplaintCommentsProps) {
   const [message, setMessage] = useState('');
+  const fieldId = useId();
 
   return (
     <div className="space-y-4">
@@ -53,7 +54,8 @@ export function ComplaintComments({
         <div className="space-y-3">
           <Textarea
             label={submitLabel}
-            name="comment"
+            name={fieldId}
+            maxLength={3000}
             value={message}
             placeholder={placeholder}
             onChange={(event) => setMessage(event.target.value)}
@@ -61,9 +63,8 @@ export function ComplaintComments({
           <div className="flex justify-end">
             <Button
               disabled={submitting || !message.trim()}
-              onClick={() => {
-                onSubmit(message.trim());
-                setMessage('');
+              onClick={async () => {
+                if (await onSubmit(message.trim())) setMessage('');
               }}
             >
               {submitting ? 'Posting…' : submitLabel}

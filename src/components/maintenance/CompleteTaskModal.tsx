@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import type { CompleteTaskValues } from '@/types/maintenance';
 import { validateCompleteTask, type CompleteTaskErrors } from '@/utils/complaintValidation';
+import { financeToday } from '@/utils/financeCalc';
 import { useState } from 'react';
 
 interface CompleteTaskModalProps {
@@ -19,7 +20,7 @@ export function CompleteTaskModal({ open, submitting, onClose, onSubmit }: Compl
     resolutionNotes: '',
     actualCost: 0,
     partsUsed: '',
-    completedAt: new Date().toISOString().slice(0, 10),
+    completedAt: financeToday(),
   });
   const [errors, setErrors] = useState<CompleteTaskErrors>({});
 

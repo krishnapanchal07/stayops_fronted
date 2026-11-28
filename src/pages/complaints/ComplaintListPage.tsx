@@ -1,3 +1,4 @@
+import { TextInput } from '@/components/forms/TextInput';
 import { Card } from '@/components/common/Card';
 import { Dropdown } from '@/components/common/Dropdown';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -7,7 +8,6 @@ import { ComplaintForm } from '@/components/complaints/ComplaintForm';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { StatusPill } from '@/components/dashboard/StatusPill';
-import { EmptyState } from '@/components/feedback/EmptyState';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { DateInput } from '@/components/forms/DateInput';
 import { SearchInput } from '@/components/forms/SearchInput';
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { Modal } from '@/components/ui/Modal';
 import { Permission } from '@/constants/permissions';
+import { useFinanceTable } from '@/hooks/useFinanceTable';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useHasPermission } from '@/hooks/useHasPermission';
@@ -43,7 +44,7 @@ import {
   type ComplaintFormValues,
 } from '@/types/complaint';
 import type { DataTableColumn } from '@/types/ui';
-import { emptyComplaintFilters, filterComplaints, isComplaintOverdue, summarizeComplaints } from '@/utils/complaintRules';
+import { emptyComplaintFilters, isComplaintOverdue } from '@/utils/complaintRules';
 import { emptyComplaintForm, validateComplaintForm, type ComplaintFormErrors } from '@/utils/complaintValidation';
 import { formatDateTime, formatShortDate } from '@/utils/format';
 import { MoreHorizontal, Plus } from 'lucide-react';
@@ -58,14 +59,6 @@ function detailHref(pathname: string, id: string): string {
   return complaintDetailPath(id);
 }
 
-function matchesBuildingFloor(complaint: Complaint, filters: ComplaintFilters, rooms: { id: string; buildingId: string; floorId: string }[]): boolean {
-  if (!filters.buildingId && !filters.floorId) return true;
-  const room = rooms.find((item) => item.id === complaint.roomId);
-  if (filters.buildingId && room?.buildingId !== filters.buildingId) return false;
-  if (filters.floorId && room?.floorId !== filters.floorId) return false;
-  return true;
-}
-
 export function ComplaintListPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -78,30 +71,21 @@ export function ComplaintListPage() {
   const canUpdate = useHasPermission(Permission.COMPLAINT_UPDATE) && !isTenant;
   const homeHref = isTenant ? PATHS.tenant.dashboard : isWarden ? PATHS.warden.dashboard : PATHS.admin.dashboard;
 
-  const complaintsLoader = useCallback(() => {
-    if (isTenant && user) return complaintService.getComplaintsByTenant(user.id);
-    if (isWarden && user?.propertyIds?.length) {
-      return complaintService.searchComplaints(emptyComplaintFilters(), user.propertyIds);
-    }
-    return complaintService.getComplaints();
-  }, [isTenant, isWarden, user]);
   const propertiesLoader = useCallback(() => propertyService.getProperties(), []);
   const roomsLoader = useCallback(() => roomService.getRooms(), []);
-  const staffLoader = useCallback(() => complaintService.getMaintenanceStaff(), []);
   const tenantLoader = useCallback(() => {
     if (!isTenant || !user) return Promise.resolve(null);
-    return tenantService.getTenantById(user.id).catch(() => null);
+    return tenantService.getMyTenant();
   }, [isTenant, user]);
 
-  const { data, status, error, reload } = useAsyncResource(complaintsLoader);
   const { data: properties } = useAsyncResource(propertiesLoader);
   const { data: rooms } = useAsyncResource(roomsLoader);
-  const { data: staff } = useAsyncResource(staffLoader);
   const { data: tenant } = useAsyncResource(tenantLoader);
 
   const [filters, setFilters] = useState<ComplaintFilters>(emptyComplaintFilters());
   const [tab, setTab] = useState<TenantTab>('ALL');
   const [raiseOpen, setRaiseOpen] = useState(false);
+  const [locationFilter, setLocationFilter] = useState({ propertyId: '', buildingId: '', floorId: '', roomId: '' });
   const [formValues, setFormValues] = useState<ComplaintFormValues>(emptyComplaintForm());
   const [formErrors, setFormErrors] = useState<ComplaintFormErrors>({});
   const [formSaving, setFormSaving] = useState(false);
@@ -110,27 +94,29 @@ export function ComplaintListPage() {
   const [assignSaving, setAssignSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
 
-  const complaints = useMemo(() => data ?? [], [data]);
+  const table = useFinanceTable<Complaint>('/complaints', { ...filters, overdueOnly: String(filters.overdueOnly), tab });
+  const { status, error } = table;
+  const summaryResource = useAsyncResource(complaintService.getComplaintSummary);
+  const summary = summaryResource.data;
+  const reload = () => { table.reload(); summaryResource.reload(); };
   const roomRows = useMemo(() => rooms ?? [], [rooms]);
-  const filtered = useMemo(() => {
-    const next = filterComplaints(complaints, filters).filter((item) => matchesBuildingFloor(item, filters, roomRows));
-    if (!isTenant) return next;
-    if (tab === 'OPEN') return next.filter((item) => item.status === ComplaintStatus.OPEN || item.status === ComplaintStatus.REVIEWED);
-    if (tab === 'IN_PROGRESS') {
-      return next.filter(
-        (item) =>
-          item.status === ComplaintStatus.ASSIGNED ||
-          item.status === ComplaintStatus.IN_PROGRESS ||
-          item.status === ComplaintStatus.ESCALATED,
-      );
-    }
-    if (tab === 'RESOLVED') {
-      return next.filter((item) => item.status === ComplaintStatus.RESOLVED || item.status === ComplaintStatus.CLOSED);
-    }
-    if (tab === 'OVERDUE') return next.filter((item) => isComplaintOverdue(item));
-    return next;
-  }, [complaints, filters, isTenant, roomRows, tab]);
-  const summary = useMemo(() => summarizeComplaints(complaints), [complaints]);
+  const staffProperty = assignTarget?.propertyId ?? filters.propertyId;
+  const staffLoader = useCallback(() => canAssign ? complaintService.getMaintenanceStaff(staffProperty) : Promise.resolve([]), [canAssign, staffProperty]);
+  const { data: staff } = useAsyncResource(staffLoader);
+  const optionsLoader = useCallback(() => canCreate && !isTenant && raiseOpen && locationFilter.propertyId
+    ? complaintService.getEligibleTenants(locationFilter) : Promise.resolve([]), [canCreate, isTenant, raiseOpen, locationFilter]);
+  const tenantOptions = useAsyncResource(optionsLoader);
+  const selectedTenant = tenantOptions.data?.find((item) => item.id === formValues.tenantId);
+  const eligibleRooms = roomRows.filter((room) => room.propertyId === locationFilter.propertyId);
+  const formBuildings = [...new Map(eligibleRooms.map((room) => [room.buildingId, room.buildingName])).entries()];
+  const formFloors = [...new Map(eligibleRooms.filter((room) => room.buildingId === locationFilter.buildingId)
+    .map((room) => [room.floorId, room.floorName])).entries()];
+  const formRooms = eligibleRooms.filter((room) => room.floorId === locationFilter.floorId);
+  const selectLocation = (next: typeof locationFilter) => {
+    setLocationFilter(next);
+    setFormValues((current) => ({ ...current, tenantId: undefined, roomId: '' }));
+  };
+  const canRaise = canCreate && (!isTenant || Boolean(tenant?.roomId));
 
   const buildings = useMemo(() => {
     const seen = new Map<string, string>();
@@ -160,14 +146,20 @@ export function ComplaintListPage() {
       .map((room) => ({ value: room.id, label: room.roomNumber }));
   }, [filters.buildingId, filters.floorId, filters.propertyId, roomRows]);
 
-  const roomLabel = tenant?.roomNumber
+  const roomLabel = !isTenant ? (selectedTenant ? `${selectedTenant.roomNumber} · ${selectedTenant.propertyName}` : 'Select a tenant') : tenant?.roomNumber
     ? `${tenant.roomNumber}${tenant.propertyName ? ` · ${tenant.propertyName}` : ''}`
     : 'No active allocation';
 
   const openRaise = () => {
     setFormValues(emptyComplaintForm(tenant?.roomId ?? ''));
     setFormErrors({});
+    setLocationFilter({ propertyId: '', buildingId: '', floorId: '', roomId: '' });
     setRaiseOpen(true);
+  };
+  const closeRaise = () => {
+    if (formSaving) return;
+    for (const item of formValues.attachments) URL.revokeObjectURL(item.previewUrl);
+    setRaiseOpen(false);
   };
 
   const columns: DataTableColumn<Complaint>[] = [
@@ -262,7 +254,7 @@ export function ComplaintListPage() {
         }
         breadcrumbs={[{ label: 'Home', href: homeHref }, { label: isTenant ? 'My Complaints' : 'Complaints' }]}
         actions={
-          isTenant && canCreate ? (
+          canRaise ? (
             <Button leftIcon={<Plus className="h-4 w-4" />} onClick={openRaise}>
               Raise Complaint
             </Button>
@@ -275,9 +267,10 @@ export function ComplaintListPage() {
         <ErrorState description={error ?? 'Unable to load complaints.'} onRetry={reload} />
       ) : null}
 
-      {status === 'success' ? (
+      {status !== 'error' ? (
         <div className="space-y-5">
-          <div className={`grid gap-4 sm:grid-cols-2 ${isTenant ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}>
+          {summaryResource.status === 'error' ? <ErrorState description="Unable to load complaint statistics." onRetry={summaryResource.reload} /> : null}
+          {summary ? <div className={`grid gap-4 sm:grid-cols-2 ${isTenant ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}>
             {isTenant ? (
               <>
                 <StatCard metric={{ id: 'open', label: 'Open', value: String(summary.open), tone: 'warning' }} />
@@ -302,7 +295,7 @@ export function ComplaintListPage() {
                 />
               </>
             )}
-          </div>
+          </div> : null}
 
           {isTenant ? (
             <div className="flex flex-wrap gap-2">
@@ -440,31 +433,21 @@ export function ComplaintListPage() {
                 }
               />
               <SearchInput
-                value={filters.query}
+                value={table.search}
                 placeholder="Search ID, tenant, room, title"
                 aria-label="Search complaints"
-                onChange={(event) => setFilters((current) => ({ ...current, query: event.target.value }))}
+                onChange={(event) => table.setSearch(event.target.value)}
               />
             </div>
           )}
 
-          {filtered.length === 0 ? (
-            <EmptyState
-              title={isTenant ? 'No complaints yet.' : 'No complaints found.'}
-              description={
-                isTenant
-                  ? 'Raise a complaint when something in your room needs attention.'
-                  : 'Try adjusting your filters.'
-              }
-              actionLabel={isTenant && canCreate ? 'Raise Complaint' : undefined}
-              onAction={isTenant && canCreate ? openRaise : undefined}
-            />
-          ) : (
+          {isTenant && !tenant?.roomId ? <p className="typo-helper">A current room allocation is required to raise a complaint.</p> : null}
+          {isTenant ? <TextInput label="Search complaints" name="tenantComplaintSearch" value={table.search} onChange={(event) => table.setSearch(event.target.value)} /> : null}
             <DataTable
               columns={columns}
-              data={filtered}
+              data={table.data?.items ?? []}
+              {...table.tableProps}
               rowKey={(row) => row.id}
-              searchable={isTenant}
               searchPlaceholder="Search complaint ID, title, room"
               emptyTitle={isTenant ? 'No complaints yet.' : 'No complaints found.'}
               emptyDescription={isTenant ? 'Raise a complaint to get started.' : 'Try adjusting your filters.'}
@@ -493,11 +476,34 @@ export function ComplaintListPage() {
                 </Card>
               )}
             />
-          )}
         </div>
       ) : null}
 
-      <Modal open={raiseOpen} title="Raise Complaint" onClose={() => setRaiseOpen(false)} className="max-h-[90vh] max-w-xl overflow-y-auto">
+      <Modal open={raiseOpen} title="Raise Complaint" onClose={closeRaise} className="max-h-[90vh] max-w-xl overflow-y-auto">
+        {!isTenant ? (
+          <div className="mb-4 grid gap-3 sm:grid-cols-2">
+            <Select label="Property" name="complaintProperty" placeholder="Select property" value={locationFilter.propertyId}
+              options={(properties ?? []).map((item) => ({ value: item.id, label: item.name }))}
+              onChange={(e) => selectLocation({ propertyId: e.target.value, buildingId: '', floorId: '', roomId: '' })} />
+            <Select label="Building" name="complaintBuilding" value={locationFilter.buildingId} disabled={!locationFilter.propertyId}
+              options={[{ value: '', label: 'Any building' }, ...formBuildings.map(([value,label]) => ({ value, label }))]}
+              onChange={(e) => selectLocation({ ...locationFilter, buildingId: e.target.value, floorId: '', roomId: '' })} />
+            <Select label="Floor" name="complaintFloor" value={locationFilter.floorId} disabled={!locationFilter.buildingId}
+              options={[{ value: '', label: 'Any floor' }, ...formFloors.map(([value,label]) => ({ value, label }))]}
+              onChange={(e) => selectLocation({ ...locationFilter, floorId: e.target.value, roomId: '' })} />
+            <Select label="Room filter" name="complaintRoom" value={locationFilter.roomId} disabled={!locationFilter.floorId}
+              options={[{ value: '', label: 'Any room' }, ...formRooms.map((item) => ({ value: item.id, label: item.roomNumber }))]}
+              onChange={(e) => selectLocation({ ...locationFilter, roomId: e.target.value })} />
+            <Select label="Tenant" name="complaintTenant" value={formValues.tenantId ?? ''}
+              disabled={!locationFilter.propertyId || tenantOptions.status !== 'success'}
+              options={[{ value: '', label: tenantOptions.status === 'loading' ? 'Loading tenants…' :
+                tenantOptions.data?.length ? 'Select an allocated tenant' : 'No allocated tenants' },
+                ...(tenantOptions.data ?? []).map((t) => ({ value: t.id, label: `${t.name} · Room ${t.roomNumber}` }))]}
+              onChange={(e) => { const found = tenantOptions.data?.find((t) => t.id === e.target.value); setFormValues((old) => ({ ...old, tenantId: found?.id, roomId: found?.roomId ?? '' })); }}
+            />
+            {tenantOptions.status === 'error' ? <Button variant="outline" onClick={tenantOptions.reload}>Retry loading tenants</Button> : null}
+          </div>
+        ) : null}
         <ComplaintForm
           values={formValues}
           errors={formErrors}
@@ -505,11 +511,15 @@ export function ComplaintListPage() {
           uploadedBy={user?.name ?? 'Tenant'}
           submitting={formSaving}
           onChange={setFormValues}
-          onCancel={() => setRaiseOpen(false)}
+          onCancel={closeRaise}
           onAttachmentError={(message) => toast('error', 'Attachment', message)}
           onSubmit={async () => {
-            if (!user) return;
-            const errors = validateComplaintForm(formValues, Boolean(tenant?.roomId));
+            if (!user || formSaving) return;
+            if (!isTenant && !selectedTenant) {
+              toast('error', 'Select an allocated tenant.');
+              return;
+            }
+            const errors = validateComplaintForm(formValues, true);
             setFormErrors(errors);
             if (Object.keys(errors).length > 0) {
               toast('error', 'Unable to create complaint', Object.values(errors)[0]);
@@ -519,6 +529,7 @@ export function ComplaintListPage() {
             try {
               await complaintService.createComplaint(formValues, { id: user.id, name: user.name, role: user.role });
               toast('success', 'Complaint created', 'Your issue has been submitted.');
+              for (const item of formValues.attachments) URL.revokeObjectURL(item.previewUrl);
               setRaiseOpen(false);
               reload();
             } catch (cause) {
@@ -537,11 +548,12 @@ export function ComplaintListPage() {
         staff={staff ?? []}
         submitting={assignSaving}
         onClose={() => setAssignTarget(null)}
-        onSubmit={async (staffId, priority, dueAt) => {
+        onSubmit={async (staffId, priority, dueAt, estimatedCost) => {
           if (!assignTarget || !user) return;
           setAssignSaving(true);
           try {
             await complaintService.assignComplaint(assignTarget.id, staffId, {
+              estimatedCost,
               priority,
               dueAt,
               actor: { id: user.id, name: user.name, role: user.role },

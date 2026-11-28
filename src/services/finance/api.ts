@@ -11,7 +11,7 @@ export function financeUrl(path: string, filters: FinanceQuery = {}) {
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== '') params.set(key, String(value));
   });
-  return `/finance/${path}?${params}`;
+  return `${path.startsWith('/') ? path : `/finance/${path}`}?${params}`;
 }
 export const financePage = <T>(path: string, filters: FinanceQuery = {}) =>
   workflowRequest<FinancePage<T>>('get', financeUrl(path, filters));

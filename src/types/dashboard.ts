@@ -74,13 +74,6 @@ export interface TenantPaymentItem {
   status: 'Due' | 'Paid' | 'Upcoming' | 'Overdue';
 }
 
-export interface TenantNoticeItem {
-  id: string;
-  title: string;
-  date: string;
-  isNew: boolean;
-}
-
 export interface TenantDashboardData {
   room: string;
   stats: StatMetric[];
@@ -92,7 +85,6 @@ export interface TenantDashboardData {
     dueDate: string;
   };
   upcomingPayments: TenantPaymentItem[];
-  recentNotices: TenantNoticeItem[];
 }
 
 export interface DueTodayItem {
@@ -113,20 +105,6 @@ export interface AccountantDashboardData {
   dueToday: DueTodayItem[];
   recentPayments: ActivityItem[];
   paymentMethods: PaymentMethodShare[];
-}
-
-export interface VisitorLogItem {
-  id: string;
-  name: string;
-  tenant: string;
-  time: string;
-  gate: string;
-}
-
-export interface SecurityDashboardData {
-  stats: StatMetric[];
-  recentCheckIns: VisitorLogItem[];
-  recentCheckOuts: VisitorLogItem[];
 }
 
 export interface MaintenanceTaskRow {
@@ -150,7 +128,4 @@ export interface WardenDashboardData {
     vacant: number;
     slices: OccupancySlice[];
   };
-  expectedVisitors: VisitorLogItem[];
-  recentNotices: TenantNoticeItem[];
-  pendingLeaves: ActivityItem[];
 }

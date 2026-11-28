@@ -27,6 +27,7 @@ export function MaintenanceTaskDetailsPage() {
   const user = useCurrentUser();
   const isAdmin = location.pathname.startsWith('/admin');
   const canUpdate = useHasPermission(Permission.MAINTENANCE_UPDATE);
+  const canCancel = useHasPermission(Permission.COMPLAINT_ASSIGN);
   const listHref = isAdmin ? PATHS.admin.maintenance : PATHS.maintenance.tasks;
 
   const loader = useCallback(() => {
@@ -48,9 +49,9 @@ export function MaintenanceTaskDetailsPage() {
         breadcrumbs={[{ label: 'Tasks', href: listHref }, { label: 'Task Details' }]}
         showBack
         actions={
-          task && actor && canUpdate ? (
+          task && actor && (canUpdate || canCancel) ? (
             <div className="flex flex-wrap gap-2">
-              {canStartMaintenanceTask(task.status) ? (
+              {canUpdate && canStartMaintenanceTask(task.status) ? (
                 <Button
                   disabled={saving}
                   onClick={async () => {
@@ -69,8 +70,22 @@ export function MaintenanceTaskDetailsPage() {
                   {task.status === 'PENDING' ? 'Accept Task' : 'Start Work'}
                 </Button>
               ) : null}
-              {canCompleteMaintenanceTask(task.status) ? (
+              {canUpdate && canCompleteMaintenanceTask(task.status) ? (
                 <Button onClick={() => setCompleteOpen(true)}>Mark Completed</Button>
+              ) : null}
+              {canCancel && (task.status === 'ASSIGNED' || task.status === 'PENDING') ? (
+                <Button variant="outline" disabled={saving} onClick={async () => {
+                  setSaving(true);
+                  try {
+                    await maintenanceService.changeMaintenanceTaskStatus(task.id, 'CANCELLED', actor);
+                    toast('success', 'Task cancelled', 'The complaint is available for reassignment.');
+                    reload();
+                  } catch (cause) {
+                    toast('error', 'Unable to cancel the task', cause instanceof Error ? cause.message : undefined);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}>Cancel task</Button>
               ) : null}
             </div>
           ) : undefined

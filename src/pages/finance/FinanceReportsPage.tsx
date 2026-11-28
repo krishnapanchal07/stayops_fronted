@@ -46,7 +46,7 @@ function downloadCsv(title: string, columns: { id: string; header: string }[], r
 export function ReportsPage() {
   const location = useLocation();
   const isAccountant = location.pathname.startsWith('/accountant');
-  const availableTypes = isAccountant ? FINANCE_REPORT_TYPES : Object.values(ReportType);
+  const availableTypes = FINANCE_REPORT_TYPES;
   const [filters, setFilters] = useState<ReportFilters>(emptyReportFilters(availableTypes[0]));
   const homeHref = isAccountant ? PATHS.accountant.dashboard : PATHS.admin.dashboard;
 
@@ -73,9 +73,9 @@ export function ReportsPage() {
   return (
     <div>
       <PageHeader
-        title="Reports"
-        description="Analyze occupancy, finance, tenants and operations."
-        breadcrumbs={[{ label: 'Home', href: homeHref }, { label: 'Reports' }]}
+        title="Finance Reports"
+        description="Review revenue, payments, outstanding balances and expenses."
+        breadcrumbs={[{ label: 'Home', href: homeHref }, { label: 'Finance Reports' }]}
         actions={
           data ? (
             <div className="flex flex-wrap gap-3">

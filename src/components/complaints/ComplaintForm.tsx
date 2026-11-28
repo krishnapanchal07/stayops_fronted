@@ -59,6 +59,7 @@ export function ComplaintForm({
       <TextInput
         label="Title"
         name="title"
+        maxLength={180}
         required
         error={errors.title}
         value={values.title}
@@ -68,6 +69,7 @@ export function ComplaintForm({
       <Textarea
         label="Description"
         name="description"
+        maxLength={5000}
         required
         error={errors.description}
         value={values.description}
@@ -79,7 +81,7 @@ export function ComplaintForm({
         error={errors.priority}
         onChange={(priority: ComplaintPriority) => onChange({ ...values, priority })}
       />
-      <TextInput label="Room" name="room" value={roomLabel} readOnly helperText="Taken from your current allocation." />
+      <TextInput label="Room" name="room" value={roomLabel} readOnly helperText="Taken from the current tenant allocation." />
       {errors.roomId ? <p className="text-sm text-danger">{errors.roomId}</p> : null}
       <ComplaintAttachmentField
         attachments={values.attachments}

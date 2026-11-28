@@ -21,15 +21,7 @@ import { ComplaintListPage } from '@/pages/complaints/ComplaintListPage';
 import { MaintenanceDashboardPage } from '@/pages/maintenance/MaintenanceDashboardPage';
 import { MaintenanceTaskDetailsPage } from '@/pages/maintenance/MaintenanceTaskDetailsPage';
 import { MaintenanceTaskListPage } from '@/pages/maintenance/MaintenanceTaskListPage';
-import { LeaveDetailsPage } from '@/pages/leave/LeaveDetailsPage';
-import { LeaveListPage } from '@/pages/leave/LeaveListPage';
-import { EntryExitLogsPage } from '@/pages/security/EntryExitLogsPage';
-import { GatePassListPage } from '@/pages/security/GatePassListPage';
 import { SecurityDashboardPage } from '@/pages/security/SecurityDashboardPage';
-import { VisitorCheckInPage } from '@/pages/security/VisitorCheckInPage';
-import { VisitorCheckOutPage } from '@/pages/security/VisitorCheckOutPage';
-import { VisitorDetailsPage } from '@/pages/visitors/VisitorDetailsPage';
-import { VisitorListPage } from '@/pages/visitors/VisitorListPage';
 import { ExpenseDetailsPage } from '@/pages/finance/ExpenseDetailsPage';
 import { ExpenseListPage } from '@/pages/finance/ExpenseListPage';
 import { InvoiceDetailsPage } from '@/pages/finance/InvoiceDetailsPage';
@@ -37,19 +29,11 @@ import { InvoiceListPage } from '@/pages/finance/InvoiceListPage';
 import { OutstandingDuesPage } from '@/pages/finance/OutstandingDuesPage';
 import { PaymentDetailsPage } from '@/pages/finance/PaymentDetailsPage';
 import { PaymentListPage } from '@/pages/finance/PaymentListPage';
-import { DocumentDetailsPage } from '@/pages/documents/DocumentDetailsPage';
-import { DocumentListPage } from '@/pages/documents/DocumentListPage';
 import { HelpPage } from '@/pages/tenant/HelpPage';
 import { MyRoomPage } from '@/pages/tenant/MyRoomPage';
-import { NoticeDetailsPage } from '@/pages/notices/NoticeDetailsPage';
-import { NoticeListPage } from '@/pages/notices/NoticeListPage';
-import { SupportDetailsPage } from '@/pages/support/SupportDetailsPage';
-import { SupportListPage } from '@/pages/support/SupportListPage';
 import { TenantDashboardPage } from '@/pages/tenant/TenantDashboardPage';
 import { TenantPaymentsPage } from '@/pages/tenant/TenantPaymentsPage';
-import { AuditLogDetailsPage } from '@/pages/admin/audit/AuditLogDetailsPage';
-import { AuditLogListPage } from '@/pages/admin/audit/AuditLogListPage';
-import { ReportsPage } from '@/pages/admin/reports/ReportsPage';
+import { ReportsPage } from '@/pages/finance/FinanceReportsPage';
 import { StaffDetailsPage } from '@/pages/admin/staff/StaffDetailsPage';
 import { StaffListPage } from '@/pages/admin/staff/StaffListPage';
 import { TenantProfilePage } from '@/pages/tenant/TenantProfilePage';
@@ -149,18 +133,6 @@ export const appRouteDefinitions: AppRouteDefinition[] = [
     permission: Permission.STAFF_VIEW,
   },
   {
-    path: PATHS.admin.visitors,
-    element: <VisitorListPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.VISITOR_VIEW,
-  },
-  {
-    path: PATHS.admin.visitorDetail,
-    element: <VisitorDetailsPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.VISITOR_VIEW,
-  },
-  {
     path: PATHS.admin.complaints,
     element: <ComplaintListPage />,
     roles: ADMIN_ROLES,
@@ -183,18 +155,6 @@ export const appRouteDefinitions: AppRouteDefinition[] = [
     element: <MaintenanceTaskDetailsPage />,
     roles: ADMIN_ROLES,
     permission: Permission.MAINTENANCE_VIEW,
-  },
-  {
-    path: PATHS.admin.leaveRequests,
-    element: <LeaveListPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.LEAVE_VIEW,
-  },
-  {
-    path: PATHS.admin.leaveDetail,
-    element: <LeaveDetailsPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.LEAVE_VIEW,
   },
   {
     path: PATHS.admin.payments,
@@ -233,58 +193,10 @@ export const appRouteDefinitions: AppRouteDefinition[] = [
     permission: Permission.EXPENSE_VIEW,
   },
   {
-    path: PATHS.admin.notices,
-    element: <NoticeListPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.NOTICE_VIEW,
-  },
-  {
-    path: PATHS.admin.noticeDetail,
-    element: <NoticeDetailsPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.NOTICE_VIEW,
-  },
-  {
-    path: PATHS.admin.documents,
-    element: <DocumentListPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.DOCUMENT_VIEW,
-  },
-  {
-    path: PATHS.admin.documentDetail,
-    element: <DocumentDetailsPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.DOCUMENT_VIEW,
-  },
-  {
-    path: PATHS.admin.support,
-    element: <SupportListPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.SUPPORT_VIEW,
-  },
-  {
-    path: PATHS.admin.supportDetail,
-    element: <SupportDetailsPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.SUPPORT_VIEW,
-  },
-  {
     path: PATHS.admin.reports,
     element: <ReportsPage />,
     roles: ADMIN_ROLES,
-    permission: Permission.REPORT_VIEW,
-  },
-  {
-    path: PATHS.admin.auditLogs,
-    element: <AuditLogListPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.AUDIT_VIEW,
-  },
-  {
-    path: PATHS.admin.auditLogDetail,
-    element: <AuditLogDetailsPage />,
-    roles: ADMIN_ROLES,
-    permission: Permission.AUDIT_VIEW,
+    permission: Permission.FINANCE_REPORT_VIEW,
   },
   {
     path: PATHS.admin.settings,
@@ -359,66 +271,6 @@ export const appRouteDefinitions: AppRouteDefinition[] = [
     permission: Permission.COMPLAINT_VIEW,
   },
   {
-    path: PATHS.warden.visitors,
-    element: <VisitorListPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.VISITOR_VIEW,
-  },
-  {
-    path: PATHS.warden.visitorDetail,
-    element: <VisitorDetailsPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.VISITOR_VIEW,
-  },
-  {
-    path: PATHS.warden.leaveRequests,
-    element: <LeaveListPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.LEAVE_VIEW,
-  },
-  {
-    path: PATHS.warden.leaveDetail,
-    element: <LeaveDetailsPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.LEAVE_VIEW,
-  },
-  {
-    path: PATHS.warden.notices,
-    element: <NoticeListPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.NOTICE_VIEW,
-  },
-  {
-    path: PATHS.warden.noticeDetail,
-    element: <NoticeDetailsPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.NOTICE_VIEW,
-  },
-  {
-    path: PATHS.warden.documents,
-    element: <DocumentListPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.DOCUMENT_VIEW,
-  },
-  {
-    path: PATHS.warden.documentDetail,
-    element: <DocumentDetailsPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.DOCUMENT_VIEW,
-  },
-  {
-    path: PATHS.warden.support,
-    element: <SupportListPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.SUPPORT_VIEW,
-  },
-  {
-    path: PATHS.warden.supportDetail,
-    element: <SupportDetailsPage />,
-    roles: [RoleCode.WARDEN],
-    permission: Permission.SUPPORT_VIEW,
-  },
-  {
     path: PATHS.warden.profile,
     element: <StaffProfilePage />,
     roles: [RoleCode.WARDEN],
@@ -482,7 +334,7 @@ export const appRouteDefinitions: AppRouteDefinition[] = [
     path: PATHS.accountant.reports,
     element: <ReportsPage />,
     roles: [RoleCode.ACCOUNTANT],
-    permission: Permission.REPORT_VIEW,
+    permission: Permission.FINANCE_REPORT_VIEW,
   },
   {
     path: PATHS.accountant.profile,
@@ -501,30 +353,6 @@ export const appRouteDefinitions: AppRouteDefinition[] = [
     element: <SecurityDashboardPage />,
     roles: [RoleCode.SECURITY],
     permission: Permission.DASHBOARD_VIEW,
-  },
-  {
-    path: PATHS.security.checkIn,
-    element: <VisitorCheckInPage />,
-    roles: [RoleCode.SECURITY],
-    permission: Permission.VISITOR_CHECKIN,
-  },
-  {
-    path: PATHS.security.checkOut,
-    element: <VisitorCheckOutPage />,
-    roles: [RoleCode.SECURITY],
-    permission: Permission.VISITOR_CHECKIN,
-  },
-  {
-    path: PATHS.security.gatePasses,
-    element: <GatePassListPage />,
-    roles: [RoleCode.SECURITY],
-    permission: Permission.LEAVE_VIEW,
-  },
-  {
-    path: PATHS.security.entryExitLogs,
-    element: <EntryExitLogsPage />,
-    roles: [RoleCode.SECURITY],
-    permission: Permission.VISITOR_VIEW,
   },
   {
     path: PATHS.security.profile,
@@ -647,54 +475,6 @@ export const appRouteDefinitions: AppRouteDefinition[] = [
     permission: Permission.COMPLAINT_VIEW,
   },
   {
-    path: PATHS.tenant.visitors,
-    element: <VisitorListPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.VISITOR_VIEW,
-  },
-  {
-    path: PATHS.tenant.visitorDetail,
-    element: <VisitorDetailsPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.VISITOR_VIEW,
-  },
-  {
-    path: PATHS.tenant.leave,
-    element: <LeaveListPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.LEAVE_VIEW,
-  },
-  {
-    path: PATHS.tenant.leaveDetail,
-    element: <LeaveDetailsPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.LEAVE_VIEW,
-  },
-  {
-    path: PATHS.tenant.notices,
-    element: <NoticeListPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.NOTICE_VIEW,
-  },
-  {
-    path: PATHS.tenant.noticeDetail,
-    element: <NoticeDetailsPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.NOTICE_VIEW,
-  },
-  {
-    path: PATHS.tenant.documents,
-    element: <DocumentListPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.DOCUMENT_VIEW,
-  },
-  {
-    path: PATHS.tenant.documentDetail,
-    element: <DocumentDetailsPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.DOCUMENT_VIEW,
-  },
-  {
     path: PATHS.tenant.profile,
     element: <TenantProfilePage />,
     roles: [RoleCode.TENANT],
@@ -705,18 +485,6 @@ export const appRouteDefinitions: AppRouteDefinition[] = [
     element: <HelpPage />,
     roles: [RoleCode.TENANT],
     permission: Permission.HELP_VIEW,
-  },
-  {
-    path: PATHS.tenant.helpRequests,
-    element: <SupportListPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.SUPPORT_VIEW,
-  },
-  {
-    path: PATHS.tenant.helpRequestDetail,
-    element: <SupportDetailsPage />,
-    roles: [RoleCode.TENANT],
-    permission: Permission.SUPPORT_VIEW,
   },
 ];
 

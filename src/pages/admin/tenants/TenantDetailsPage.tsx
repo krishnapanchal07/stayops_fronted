@@ -39,12 +39,6 @@ import { Pencil } from 'lucide-react';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-const documentStatusLabel = {
-  PENDING: 'Pending',
-  UPLOADED: 'Uploaded',
-  VERIFIED: 'Verified',
-  EXPIRED: 'Expired',
-} as const;
 
 export function TenantDetailsPage() {
   const { tenantId = '' } = useParams();
@@ -57,8 +51,6 @@ export function TenantDetailsPage() {
   const canAssignRoom = useHasPermission(Permission.ROOM_ALLOCATE);
   const canViewPayments = useHasPermission(Permission.PAYMENT_VIEW);
   const canViewComplaints = useHasPermission(Permission.COMPLAINT_VIEW);
-  const canViewVisitors = useHasPermission(Permission.VISITOR_VIEW);
-  const canViewLeave = useHasPermission(Permission.LEAVE_VIEW);
   const homeHref = isWarden ? PATHS.warden.dashboard : PATHS.admin.dashboard;
   const listHref = isWarden ? PATHS.warden.tenants : PATHS.admin.tenants;
   const propertyIds = user?.roleId === 'SUPER_ADMIN' ? undefined : user?.propertyIds;
@@ -76,22 +68,16 @@ export function TenantDetailsPage() {
     return rooms.filter((room) => propertyIds.includes(room.propertyId));
   }, [propertyIds]);
   const activityLoader = useCallback(() => tenantService.getTenantActivity(tenantId, propertyIds), [propertyIds, tenantId]);
-  const documentsLoader = useCallback(() => tenantService.getTenantDocuments(tenantId, propertyIds), [propertyIds, tenantId]);
   const paymentsLoader = useCallback(() => tenantService.getTenantPaymentsSummary(tenantId, propertyIds), [propertyIds, tenantId]);
-  const complaintsLoader = useCallback(() => tenantService.getTenantComplaintsSummary(tenantId, propertyIds), [propertyIds, tenantId]);
-  const visitorsLoader = useCallback(() => tenantService.getTenantVisitorsSummary(tenantId, propertyIds), [propertyIds, tenantId]);
-  const leaveLoader = useCallback(() => tenantService.getTenantLeaveSummary(tenantId, propertyIds), [propertyIds, tenantId]);
+  const complaintsLoader = useCallback(() => tenantService.getTenantComplaintsSummary(tenantId), [tenantId]);
 
   const { data: tenant, status, error, reload } = useAsyncResource(tenantLoader);
   const { data: tenants } = useAsyncResource(tenantsLoader);
   const { data: properties } = useAsyncResource(propertiesLoader);
   const { data: rooms, reload: reloadRooms } = useAsyncResource(roomsLoader);
   const { data: activity } = useAsyncResource(activityLoader);
-  const { data: documents } = useAsyncResource(documentsLoader);
   const { data: payments } = useAsyncResource(paymentsLoader);
   const { data: complaints } = useAsyncResource(complaintsLoader);
-  const { data: visitors } = useAsyncResource(visitorsLoader);
-  const { data: leave } = useAsyncResource(leaveLoader);
 
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -158,7 +144,7 @@ export function TenantDetailsPage() {
 
       {status === 'success' && tenant ? (
         <>
-          <p className="typo-helper mb-4">Tenant profiles, allocations and financial records are persistent. Complaints, visitors, leave and document storage are not connected to these profiles yet.</p>
+          <p className="typo-helper mb-4">Tenant profiles, allocations and financial records are persistent.</p>
           <PageHeader
             title={tenant.fullName}
             description={tenant.tenantCode}
@@ -362,51 +348,6 @@ export function TenantDetailsPage() {
               </Card>
             </div>
 
-            <div className="grid gap-5 xl:grid-cols-2">
-              <Card>
-                <CardHeader
-                  title="Visitors"
-                  action={
-                    canViewVisitors ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => navigate(isWarden ? PATHS.warden.visitors : PATHS.admin.visitors)}
-                      >
-                        View Visitors
-                      </Button>
-                    ) : null
-                  }
-                />
-                <dl className="grid gap-4 sm:grid-cols-2">
-                  <InfoRow label="Total visitors" value={visitors ? String(visitors.total) : 'Unavailable'} />
-                  <InfoRow label="Upcoming visitors" value={visitors ? String(visitors.upcoming) : 'Unavailable'} />
-                  <InfoRow label="Last visit" value={visitors?.lastVisit ?? '—'} />
-                </dl>
-              </Card>
-
-              <Card>
-                <CardHeader
-                  title="Leave"
-                  action={
-                    canViewLeave ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => navigate(isWarden ? PATHS.warden.leaveRequests : PATHS.admin.leaveRequests)}
-                      >
-                        View Leave Requests
-                      </Button>
-                    ) : null
-                  }
-                />
-                <dl className="grid gap-4 sm:grid-cols-2">
-                  <InfoRow label="Pending requests" value={leave ? String(leave.pending) : 'Unavailable'} />
-                  <InfoRow label="Approved requests" value={leave ? String(leave.approved) : 'Unavailable'} />
-                  <InfoRow label="Last leave" value={leave?.lastLeave ?? '—'} />
-                </dl>
-              </Card>
-            </div>
 
             <ActivityList
               title="Activity"
@@ -419,28 +360,6 @@ export function TenantDetailsPage() {
               emptyTitle="No activity recorded yet."
             />
 
-            <Card>
-              <CardHeader title="Documents" />
-                <p className="typo-helper">Document storage is not connected yet.</p>
-              {documents && documents.length > 0 ? (
-                <ul className="space-y-3">
-                  {documents.map((document) => (
-                    <li key={document.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
-                      <div>
-                        <p className="font-medium text-text">{document.name}</p>
-                        <p className="typo-helper">{document.type}</p>
-                      </div>
-                      <div className="text-right">
-                        <StatusPill value={documentStatusLabel[document.status]} />
-                        <p className="typo-muted mt-1">{formatShortDate(document.uploadedAt)}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="typo-secondary">No documents on file yet.</p>
-              )}
-            </Card>
 
             <Card>
               <CardHeader title="Internal Notes" />

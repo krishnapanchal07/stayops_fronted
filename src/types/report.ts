@@ -1,29 +1,17 @@
 export const ReportType = {
-  OCCUPANCY: 'OCCUPANCY',
   REVENUE: 'REVENUE',
   PAYMENTS: 'PAYMENTS',
   OUTSTANDING: 'OUTSTANDING',
   EXPENSES: 'EXPENSES',
-  TENANTS: 'TENANTS',
-  COMPLAINTS: 'COMPLAINTS',
-  VISITORS: 'VISITORS',
-  LEAVE: 'LEAVE',
-  MAINTENANCE: 'MAINTENANCE',
 } as const;
 
 export type ReportType = (typeof ReportType)[keyof typeof ReportType];
 
 export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
-  OCCUPANCY: 'Occupancy Report',
   REVENUE: 'Revenue Report',
   PAYMENTS: 'Payment Report',
   OUTSTANDING: 'Outstanding Dues Report',
   EXPENSES: 'Expense Report',
-  TENANTS: 'Tenant Report',
-  COMPLAINTS: 'Complaint Report',
-  VISITORS: 'Visitor Report',
-  LEAVE: 'Leave Report',
-  MAINTENANCE: 'Maintenance Report',
 };
 
 export const FINANCE_REPORT_TYPES: ReportType[] = [

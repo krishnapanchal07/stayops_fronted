@@ -1,7 +1,7 @@
 import { TenantProfileImageField } from '@/components/tenants/TenantProfileImageField';
 import { TextInput } from '@/components/forms/TextInput';
-import type { TenantProfileFormValues } from '@/types/support';
-import type { TenantProfileFormErrors } from '@/utils/supportValidation';
+import type { TenantProfileFormValues } from '@/types/profile';
+import type { TenantProfileFormErrors } from '@/utils/profileValidation';
 
 interface TenantProfileFormProps {
   values: TenantProfileFormValues;

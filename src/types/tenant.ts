@@ -65,14 +65,6 @@ export interface EmergencyContact {
   address?: string;
 }
 
-export interface TenantDocument {
-  id: string;
-  name: string;
-  type: string;
-  status: 'PENDING' | 'UPLOADED' | 'VERIFIED' | 'EXPIRED';
-  uploadedAt: string;
-}
-
 export interface TenantActivityEvent {
   id: string;
   action: string;
@@ -92,18 +84,6 @@ export interface TenantComplaintsSummary {
   open: number;
   resolved: number;
   lastComplaint: string | null;
-}
-
-export interface TenantVisitorsSummary {
-  total: number;
-  upcoming: number;
-  lastVisit: string | null;
-}
-
-export interface TenantLeaveSummary {
-  pending: number;
-  approved: number;
-  lastLeave: string | null;
 }
 
 export interface Tenant {

@@ -10,6 +10,7 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { StatusPill } from '@/components/dashboard/StatusPill';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { Permission } from '@/constants/permissions';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -24,7 +25,6 @@ import {
   COMPLAINT_STATUS_LABELS,
   ComplaintStatus,
 } from '@/types/complaint';
-import { isPreviewableImage } from '@/utils/complaintAttachments';
 import {
   canAssignComplaint,
   canEscalateComplaint,
@@ -34,7 +34,7 @@ import {
   isComplaintOverdue,
 } from '@/utils/complaintRules';
 import { formatDateTime, formatFileSize, formatINR } from '@/utils/format';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 function listPath(pathname: string): string {
@@ -57,21 +57,21 @@ export function ComplaintDetailsPage() {
   const listHref = listPath(location.pathname);
 
   const complaintLoader = useCallback(() => {
-    if (isTenant && user) return complaintService.getMyComplaintById(complaintId, user.id);
     return complaintService.getComplaintById(complaintId);
-  }, [complaintId, isTenant, user]);
+  }, [complaintId]);
   const commentsLoader = useCallback(
     () => complaintService.getComments(complaintId, !isTenant && canUpdate),
     [canUpdate, complaintId, isTenant],
   );
   const timelineLoader = useCallback(() => complaintService.getTimeline(complaintId), [complaintId]);
-  const tasksLoader = useCallback(() => maintenanceService.getTasksByComplaint(complaintId), [complaintId]);
-  const staffLoader = useCallback(() => complaintService.getMaintenanceStaff(), []);
+  const tasksLoader = useCallback(() => isTenant ? Promise.resolve([]) : maintenanceService.getTasksByComplaint(complaintId), [complaintId, isTenant]);
 
   const { data: complaint, status, error, reload } = useAsyncResource(complaintLoader);
   const { data: comments, reload: reloadComments } = useAsyncResource(commentsLoader);
   const { data: events, reload: reloadEvents } = useAsyncResource(timelineLoader);
   const { data: tasks, reload: reloadTasks } = useAsyncResource(tasksLoader);
+  const propertyId = complaint?.propertyId;
+  const staffLoader = useCallback(() => canAssign && propertyId ? complaintService.getMaintenanceStaff(propertyId) : Promise.resolve([]), [canAssign, propertyId]);
   const { data: staff } = useAsyncResource(staffLoader);
 
   const [assignOpen, setAssignOpen] = useState(false);
@@ -81,6 +81,8 @@ export function ComplaintDetailsPage() {
   const [saving, setSaving] = useState(false);
   const [commentSaving, setCommentSaving] = useState(false);
   const [noteSaving, setNoteSaving] = useState(false);
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
 
   const refresh = () => {
     reload();
@@ -279,16 +281,19 @@ export function ComplaintDetailsPage() {
                 <ul className="space-y-3">
                   {complaint.attachments.map((file) => (
                     <li key={file.id} className="flex items-center gap-3">
-                      {isPreviewableImage(file.fileType) && file.previewUrl ? (
-                        <img src={file.previewUrl} alt={file.fileName} className="h-14 w-14 rounded-lg object-cover" />
-                      ) : (
-                        <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary-soft text-xs font-semibold text-primary">
-                          FILE
-                        </span>
-                      )}
+
                       <div>
                         <p className="text-sm font-medium">{file.fileName}</p>
                         <p className="typo-helper">{formatFileSize(file.fileSize)}</p>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          void complaintService.getAttachment(complaint.id, file.id).then((blob) => {
+                            setPreview({ url: URL.createObjectURL(blob), name: file.fileName });
+                          }).catch(() => toast('error', 'Unable to load attachment.'));
+                        }}>Preview</Button>
+                        <Button size="sm" variant="outline" onClick={() => {
+                          void complaintService.downloadAttachment(complaint.id, file.id, file.fileName)
+                            .catch(() => toast('error', 'Unable to download attachment.'));
+                        }}>Download</Button>
                       </div>
                     </li>
                   ))}
@@ -335,10 +340,12 @@ export function ComplaintDetailsPage() {
                   setCommentSaving(true);
                   try {
                     await complaintService.addComplaintComment(complaint.id, message, actor);
-                    toast('success', 'Comment added', 'The timeline has been updated.');
+                    toast('success', 'Comment added');
                     refresh();
+                    return true;
                   } catch (cause) {
                     toast('error', 'Unable to comment', cause instanceof Error ? cause.message : 'Please try again.');
+                    return false;
                   } finally {
                     setCommentSaving(false);
                   }
@@ -353,7 +360,7 @@ export function ComplaintDetailsPage() {
               <p className="typo-helper mb-3">Visible to staff only. Tenants cannot see these notes.</p>
               <ComplaintComments
                 comments={internalNotes}
-                canComment
+                canComment={canTenantComment(complaint.status)}
                 submitting={noteSaving}
                 placeholder="Add an internal note…"
                 submitLabel="Add Internal Note"
@@ -364,8 +371,10 @@ export function ComplaintDetailsPage() {
                     await complaintService.addInternalNote(complaint.id, message, actor);
                     toast('success', 'Internal note added', 'This note stays hidden from the tenant.');
                     refresh();
+                    return true;
                   } catch (cause) {
                     toast('error', 'Unable to add note', cause instanceof Error ? cause.message : 'Please try again.');
+                    return false;
                   } finally {
                     setNoteSaving(false);
                   }
@@ -376,6 +385,9 @@ export function ComplaintDetailsPage() {
         </div>
       ) : null}
 
+      <Modal open={Boolean(preview)} title={preview?.name ?? 'Attachment'} onClose={() => setPreview(null)}>
+        {preview ? <img src={preview.url} alt={preview.name} className="max-h-[70vh] w-full object-contain" /> : null}
+      </Modal>
       <AssignComplaintModal
         key={complaint ? `assign-${complaint.id}-${complaint.updatedAt}` : 'assign'}
         open={assignOpen}
@@ -383,11 +395,11 @@ export function ComplaintDetailsPage() {
         staff={staff ?? []}
         submitting={saving}
         onClose={() => setAssignOpen(false)}
-        onSubmit={async (staffId, priority, dueAt) => {
+        onSubmit={async (staffId, priority, dueAt, estimatedCost) => {
           if (!complaint || !actor) return;
           setSaving(true);
           try {
-            await complaintService.assignComplaint(complaint.id, staffId, { priority, dueAt, actor });
+            await complaintService.assignComplaint(complaint.id, staffId, { priority, dueAt, estimatedCost, actor });
             toast('success', 'Complaint assigned', 'A maintenance task has been created.');
             setAssignOpen(false);
             refresh();

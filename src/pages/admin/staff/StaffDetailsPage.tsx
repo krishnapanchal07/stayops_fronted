@@ -178,7 +178,7 @@ export function StaffDetailsPage() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="typo-secondary">Maintenance tasks are not connected to persistent staff profiles yet.</p>
+                    <p className="typo-secondary">No maintenance tasks assigned.</p>
                   )}
                 </Card>
               ) : null}

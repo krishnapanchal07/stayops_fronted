@@ -6,7 +6,6 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm';
-import { NotificationPreferencesForm } from '@/components/profile/NotificationPreferencesForm';
 import { TenantProfileForm } from '@/components/profile/TenantProfileForm';
 import { TextInput } from '@/components/forms/TextInput';
 import { Button } from '@/components/ui/Button';
@@ -17,7 +16,7 @@ import { PATHS } from '@/routes/paths';
 import { profileService } from '@/services/profile/profileService';
 import { tenantService } from '@/services/tenant/tenantService';
 import { TENANT_STATUS_LABELS } from '@/types/tenant';
-import type { ChangePasswordValues, NotificationPreferences, TenantProfileFormValues } from '@/types/support';
+import type { ChangePasswordValues, TenantProfileFormValues } from '@/types/profile';
 import { formatINR, formatShortDate } from '@/utils/format';
 import {
   toTenantProfileForm,
@@ -25,7 +24,7 @@ import {
   validateTenantProfileForm,
   type ChangePasswordErrors,
   type TenantProfileFormErrors,
-} from '@/utils/supportValidation';
+} from '@/utils/profileValidation';
 import { useCallback, useState } from 'react';
 
 const emptyPassword: ChangePasswordValues = {
@@ -46,11 +45,10 @@ export function TenantProfilePage() {
       await tenantService.acceptInvitation(token);
       window.history.replaceState(null, '', window.location.pathname);
     }
-    const [tenant, preferences] = await Promise.all([
+    const [tenant] = await Promise.all([
       tenantService.getMyTenant(),
-      profileService.getNotificationPreferences(tenantId),
     ]);
-    return { tenant, preferences };
+    return { tenant };
   }, [tenantId]);
 
   const { data, status, error, reload } = useAsyncResource(loader);
@@ -58,12 +56,10 @@ export function TenantProfilePage() {
   const [formErrors, setFormErrors] = useState<TenantProfileFormErrors>({});
   const [passwordValues, setPasswordValues] = useState(emptyPassword);
   const [passwordErrors, setPasswordErrors] = useState<ChangePasswordErrors>({});
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [saving, setSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   const values = formValues ?? (data?.tenant ? toTenantProfileForm(data.tenant) : null);
-  const prefs = preferences ?? data?.preferences ?? null;
 
   const saveProfile = async () => {
     if (!values || !tenantId) return;
@@ -99,12 +95,6 @@ export function TenantProfilePage() {
     }
   };
 
-  const savePrefs = async (next: NotificationPreferences) => {
-    setPreferences(next);
-    await profileService.saveNotificationPreferences(next);
-    toast('success', 'Notification preferences saved.');
-  };
-
   return (
     <div>
       <PageHeader
@@ -122,7 +112,7 @@ export function TenantProfilePage() {
       ) : null}
 
       {status === 'success' && data && !data.tenant ? <EmptyState title="Your tenant profile is not linked yet" description="Contact management for an account invitation, then open the link sent to your email." /> : null}
-      {status === 'success' && data?.tenant && values && prefs ? (
+      {status === 'success' && data?.tenant && values ? (
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-5 lg:col-span-2">
             <Card>
@@ -165,10 +155,6 @@ export function TenantProfilePage() {
               />
             </Card>
 
-            <Card>
-              <CardHeader title="Notification preferences" />
-              <NotificationPreferencesForm values={prefs} onChange={(next) => void savePrefs(next)} />
-            </Card>
           </div>
 
           <div className="space-y-5">
