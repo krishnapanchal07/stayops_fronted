@@ -9,7 +9,7 @@ interface ReceiptViewProps {
 
 export function ReceiptView({ payment }: ReceiptViewProps) {
   return (
-    <div id="stayops-receipt" className="rounded-2xl border border-border bg-white p-6 text-text">
+    <div id="stayops-receipt" className="rounded-2xl border border-border bg-white p-6 text-text [overflow-wrap:anywhere]">
       <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
         <div>
           <Logo />
@@ -18,6 +18,9 @@ export function ReceiptView({ payment }: ReceiptViewProps) {
         </div>
         <StatusPill value={PAYMENT_STATUS_LABELS[payment.status]} />
       </div>
+      {payment.isTest ? (
+        <p className="mt-4 text-sm font-semibold text-warning">Razorpay Test Payment · No real money was transferred.</p>
+      ) : null}
       <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
         <div>
           <dt className="typo-muted">Receipt Number</dt>

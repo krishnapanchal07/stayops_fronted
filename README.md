@@ -196,3 +196,27 @@ post-checkout history, finance reports, and mobile/tablet/desktop observations.
 Not all 91 requested browser scenarios were individually exercised; see the backend
 README for precise remaining limitations. No frontend test framework, harness,
 package command or new package dependency was added.
+
+## Phase 5B — Razorpay Test Mode
+
+Use backend revision `0007_razorpay` and configure the server-side test keys as
+described in the [backend guide](../Backend/README.md#phase-5b--razorpay-test-mode).
+There are no frontend secret settings or new frontend packages. The Finance
+client uses the existing Axios and authentication refresh flow. The official
+Razorpay Checkout script loads only when a tenant starts a payment.
+
+From **Tenant → Payments → My Invoices**, select **Pay Now (Test Mode)** for an
+eligible QA invoice, then confirm the displayed balance on the invoice page.
+Use the methods in [Razorpay’s Test Mode instructions](https://razorpay.com/docs/payments/payment-gateway/web-integration/standard/integration-steps/#2-test-integration).
+For example, choose Netbanking and use the Razorpay demo bank's **Success** or
+**Failure** control. **Check status** can recover an interrupted or pending order
+after refresh. Success is shown only after the API verifies capture and applies
+the amount. The payment detail and receipt label test transactions, and manual
+collections remain separate in dashboards and reports.
+
+Production build and lint passed. Browser verification covered successful full and
+partial invoice settlement, dismissal and reuse, provider decline, refresh, the
+saved receipt preview, and separate actual and test totals in Admin Payment
+Management. Phone and tablet checks confirmed long invoice identifiers wrap.
+Public webhook delivery remains a deployment task. See the backend guide for the
+full verification and configuration details.

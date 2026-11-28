@@ -5,6 +5,7 @@ import { StatusPill } from '@/components/dashboard/StatusPill';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { InvoiceItemsTable } from '@/components/finance/InvoiceItemsTable';
+import { OnlineInvoicePayment } from '@/components/finance/OnlineInvoicePayment';
 import { RecordPaymentModal } from '@/components/finance/RecordPaymentModal';
 import { downloadReceipt } from '@/utils/financeReceipt';
 import { Button } from '@/components/ui/Button';
@@ -124,7 +125,7 @@ export function InvoiceDetailsPage() {
 
       {status === 'success' && invoice ? (
         <div className="space-y-5">
-          <Card>
+          <Card className="[overflow-wrap:anywhere]">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="typo-muted">StayOps Invoice</p>
@@ -162,9 +163,14 @@ export function InvoiceDetailsPage() {
           <Card>
             <CardHeader title="Items" />
             <InvoiceItemsTable invoice={invoice} />
+            {isTenant ? (
+              <div className="mt-4">
+                <OnlineInvoicePayment key={invoice.id} invoice={invoice} onApplied={() => { reload(); reloadPayments(); }} />
+              </div>
+            ) : null}
           </Card>
 
-          <Card>
+          <Card className="[overflow-wrap:anywhere]">
             <CardHeader title="Payments" />
             {paymentResource.status === 'error' ? (
               <ErrorState
@@ -187,6 +193,7 @@ export function InvoiceDetailsPage() {
                       <p className="typo-helper">
                         {formatShortDate(payment.paymentDate)} ·{' '}
                         {PAYMENT_METHOD_LABELS[payment.method]} · {formatINR(payment.amount)}
+                        {payment.isTest ? ' · Razorpay Test Mode' : ''}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

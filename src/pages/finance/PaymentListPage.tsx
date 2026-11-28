@@ -38,6 +38,7 @@ import { useCallback, useState } from 'react';
 import { useFinanceTable } from '@/hooks/useFinanceTable';
 import { TextInput } from '@/components/forms/TextInput';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { razorpayService } from '@/services/finance/razorpayService';
 
 export function PaymentListPage() {
   const location = useLocation();
@@ -57,6 +58,8 @@ export function PaymentListPage() {
   const { data: properties } = propertyResource;
   const summaryResource = useAsyncResource(summaryLoader);
   const { data: summary, reload: reloadSummary } = summaryResource;
+  const attemptsLoader = useCallback(() => razorpayService.orders(), []);
+  const reconciliation = useAsyncResource(attemptsLoader);
 
   const [filters, setFilters] = useState<PaymentFilters>(emptyPaymentFilters());
   const { data, status, error, reload, search, setSearch, tableProps } = useFinanceTable<Payment>(
@@ -80,6 +83,8 @@ export function PaymentListPage() {
       render: (row) => row.roomNumber ?? '—',
     },
     { id: 'invoiceNumber', header: 'Invoice', accessor: 'invoiceNumber', sortable: true },
+    { id: 'source', header: 'Source', render: (row) => row.isTest ? 'Razorpay Test Mode' : 'Manual' },
+    { id: 'reference', header: 'Reference', render: (row) => row.reference || '—' },
     {
       id: 'amount',
       header: 'Amount',
@@ -125,7 +130,7 @@ export function PaymentListPage() {
               label: 'View Invoice',
               onSelect: () => navigate(invoiceDetailPath(scope, row.invoiceId)),
             },
-            ...(canRefund && row.status === PaymentStatus.SUCCESS
+            ...(canRefund && !row.isTest && row.status === PaymentStatus.SUCCESS
               ? [{ id: 'refund', label: 'Refund', onSelect: () => setRefundTarget(row) }]
               : []),
           ]}
@@ -178,8 +183,9 @@ export function PaymentListPage() {
               <StatCard
                 metric={{
                   id: 'collected',
-                  label: 'Total Collected',
+                  label: 'Actual Collections',
                   value: formatINR(summary?.collected ?? 0),
+                  hint: `Test Mode applied: ${formatINR(summary.testCollected)}`,
                   tone: 'success',
                 }}
               />
@@ -202,12 +208,31 @@ export function PaymentListPage() {
               <StatCard
                 metric={{
                   id: 'today',
-                  label: "Today's Collection",
+                  label: "Today's Actual Collections",
                   value: formatINR(summary?.todayCollection ?? 0),
                   tone: 'primary',
                 }}
               />
             </div>
+          ) : null}
+
+          {reconciliation.status === 'error' ? (
+            <ErrorState description="Could not load Razorpay reconciliation status." onRetry={reconciliation.reload} />
+          ) : null}
+          {reconciliation.data?.length ? (
+            <Card>
+              <CardHeader title="Razorpay Test Mode payments needing review" />
+              <ul className="space-y-2">
+                {reconciliation.data.map((attempt) => (
+                  <li key={attempt.id} className="flex flex-wrap items-center gap-2 text-sm">
+                    <span>{attempt.providerPaymentId} · {formatINR(attempt.amountPaise / 100)} was not applied.</span>
+                    <Button size="sm" variant="outline" onClick={() => navigate(invoiceDetailPath(scope, attempt.invoiceId))}>
+                      View invoice
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
           ) : null}
 
           <div className="grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -245,6 +270,17 @@ export function PaymentListPage() {
               onChange={(event) =>
                 setFilters((current) => ({ ...current, tenantId: event.target.value }))
               }
+            />
+            <Select
+              label="Payment source"
+              name="source"
+              value={filters.source ?? ''}
+              options={[
+                { value: '', label: 'All sources' },
+                { value: 'MANUAL', label: 'Manual' },
+                { value: 'RAZORPAY_TEST', label: 'Razorpay Test Mode' },
+              ]}
+              onChange={(event) => setFilters((current) => ({ ...current, source: event.target.value as PaymentFilters['source'] }))}
             />
             <Select
               label="Status"

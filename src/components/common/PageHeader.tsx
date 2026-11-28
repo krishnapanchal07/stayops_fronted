@@ -24,7 +24,7 @@ export function PageHeader({
 
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div>
+      <div className="min-w-0 [overflow-wrap:anywhere]">
         <Breadcrumb items={breadcrumbs} />
         <h1 className="typo-page-title mt-2">{title}</h1>
         {description ? <p className="typo-secondary mt-1">{description}</p> : null}

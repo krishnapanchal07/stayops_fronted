@@ -169,6 +169,8 @@ export interface InvoiceRecord {
 }
 
 export interface Payment {
+  source: 'MANUAL' | 'RAZORPAY_TEST';
+  isTest: boolean;
   id: string;
   paymentNumber: string;
   receiptNumber: string;
@@ -215,6 +217,7 @@ export interface InvoiceFilters {
 }
 
 export interface PaymentFilters {
+  source?: Payment['source'] | '';
   query: string;
   propertyId: string;
   tenantId: string;
@@ -268,6 +271,8 @@ export interface ExpenseFormValues {
 }
 
 export interface TenantFinancialSummary {
+  testPaid: number;
+  currentMonthTestPaid: number;
   currentMonthPaid: number;
   tenantId: string;
   currentDue: number;
@@ -281,6 +286,8 @@ export interface TenantFinancialSummary {
 }
 
 export interface FinanceOverview {
+  testCollected: number;
+  thisMonthTestCollected: number;
   billed: number;
   collected: number;
   outstanding: number;

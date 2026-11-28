@@ -100,7 +100,7 @@ export const dashboardService = {
           id: 'revenue',
           label: 'Monthly Revenue',
           value: formatINR(overview.thisMonthCollected),
-          hint: `Billed ${formatINR(overview.billed)}`,
+          hint: `Test Mode applied this month: ${formatINR(overview.thisMonthTestCollected)}`,
           tone: 'success',
         },
       ],
@@ -163,6 +163,7 @@ export const dashboardService = {
       rent: {
         total: summary?.currentMonthCharges ?? 0,
         paid: summary?.currentMonthPaid ?? 0,
+        testPaid: summary?.currentMonthTestPaid ?? 0,
         due: summary?.currentDue ?? 0,
         dueDate: summary?.nextDueDate ?? 'No open invoice',
       },
@@ -183,8 +184,9 @@ export const dashboardService = {
       stats: [
         {
           id: 'collection',
-          label: 'Total Collection',
+          label: 'Actual Collections',
           value: formatINR(overview.collected),
+          hint: `Test Mode applied: ${formatINR(overview.testCollected)}`,
           tone: 'success',
         },
         {

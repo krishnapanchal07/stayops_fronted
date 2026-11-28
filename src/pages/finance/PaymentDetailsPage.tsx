@@ -64,7 +64,7 @@ export function PaymentDetailsPage() {
                   <Button onClick={() => downloadReceipt(payment)}>Download Receipt</Button>
                 </>
               ) : null}
-              {canRefund && payment.status === PaymentStatus.SUCCESS ? (
+              {canRefund && !payment.isTest && payment.status === PaymentStatus.SUCCESS ? (
                 <Button variant="danger" onClick={() => setRefundOpen(true)}>
                   Refund
                 </Button>
@@ -80,8 +80,9 @@ export function PaymentDetailsPage() {
       ) : null}
 
       {status === 'success' && payment ? (
-        <Card>
+        <Card className="[overflow-wrap:anywhere]">
           <CardHeader title="Payment details" />
+          {payment.isTest ? <p className="mb-3 text-sm font-semibold text-warning">Razorpay Test Mode · No real money was transferred.</p> : null}
           <dl className="grid gap-4 text-sm sm:grid-cols-2">
             <div>
               <dt className="typo-muted">Payment ID</dt>

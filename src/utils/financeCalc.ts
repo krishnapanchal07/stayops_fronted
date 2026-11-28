@@ -1,4 +1,4 @@
-import type { InvoiceItem } from '@/types/finance';
+import type { Invoice, InvoiceItem } from '@/types/finance';
 
 export function financeToday(): string {
   return new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -25,4 +25,7 @@ export function formatBillingPeriod(period: string): string {
   if (!year || !month) return period;
   const date = new Date(Number(year), Number(month) - 1, 1);
   return new Intl.DateTimeFormat('en-IN', { month: 'short', year: 'numeric' }).format(date);
+}
+export function eligibleForOnlinePayment(invoice: Invoice) {
+  return !invoice.cancelled && invoice.outstandingAmount >= 1 && invoice.issueDate <= financeToday();
 }

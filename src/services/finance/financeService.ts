@@ -14,6 +14,7 @@ export const financeService = {
   getTenants: (propertyId = ''): Promise<Tenant[]> =>
     workflowList(`/finance/options/tenants?${new URLSearchParams({ propertyId })}`),
   getInvoiceSummary: (): Promise<{
+    testCollected: number;
     billed: number;
     collected: number;
     outstanding: number;
@@ -21,6 +22,7 @@ export const financeService = {
     count: number;
   }> => workflowRequest('get', '/finance/invoices/summary'),
   getPaymentSummary: (): Promise<{
+    testCollected: number;
     collected: number;
     pending: number;
     overdue: number;

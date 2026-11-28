@@ -196,6 +196,7 @@ export function InvoiceListPage() {
                   id: 'collected',
                   label: 'Collected',
                   value: formatINR(summary?.collected ?? 0),
+                  hint: `Test Mode applied: ${formatINR(summary?.testCollected ?? 0)}`,
                   tone: 'success',
                 }}
               />

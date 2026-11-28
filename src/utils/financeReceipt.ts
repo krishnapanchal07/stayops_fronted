@@ -12,6 +12,7 @@ export async function downloadReceipt(record: Payment): Promise<void> {
   }
   const content = [
     'StayOps Receipt',
+    ...(payment.isTest ? ['RAZORPAY TEST PAYMENT — No real money was transferred.'] : []),
     `Receipt: ${payment.receiptNumber}`,
     `Payment: ${payment.paymentNumber}`,
     `Date: ${payment.paymentDate}`,

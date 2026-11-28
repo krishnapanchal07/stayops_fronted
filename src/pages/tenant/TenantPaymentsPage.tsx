@@ -10,6 +10,8 @@ import { TextInput } from '@/components/forms/TextInput';
 import { DataTable } from '@/components/tables/DataTable';
 import { Button } from '@/components/ui/Button';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
+import { razorpayService } from '@/services/finance/razorpayService';
+import { eligibleForOnlinePayment } from '@/utils/financeCalc';
 import { useFinanceTable } from '@/hooks/useFinanceTable';
 import { financeService } from '@/services/finance/financeService';
 import { invoiceDetailPath, paymentDetailPath } from '@/routes/financePaths';
@@ -59,6 +61,7 @@ export function TenantPaymentsPage() {
   const invoices = useFinanceTable<Invoice>('invoices', {});
   const summaryLoader = useCallback(() => financeService.getMyFinancialSummary(), []);
   const summary = useAsyncResource(summaryLoader);
+  const checkout = useAsyncResource(razorpayService.config);
   const columns: DataTableColumn<LedgerRow>[] = [
     {
       id: 'date',
@@ -85,7 +88,7 @@ export function TenantPaymentsPage() {
     {
       id: 'method',
       header: 'Method',
-      render: (r) => (r.method ? PAYMENT_METHOD_LABELS[r.method] : '—'),
+      render: (r) => r.method ? `${PAYMENT_METHOD_LABELS[r.method]}${r.payment?.isTest ? ' · Razorpay Test Mode' : ''}` : '—',
     },
     { id: 'status', header: 'Status', render: (r) => <StatusPill value={r.statusLabel} /> },
     { id: 'invoiceNumber', header: 'Invoice', accessor: 'invoiceNumber', sortable: true },
@@ -127,8 +130,8 @@ export function TenantPaymentsPage() {
         breadcrumbs={[{ label: 'Home', href: PATHS.tenant.dashboard }, { label: 'Payments' }]}
       />
       <p className="typo-helper mb-5">
-        Contact your property office to pay. Authorized staff will record your payment and issue a
-        receipt.
+        {checkout.data?.available ? 'Razorpay Test Mode is available for eligible invoices. No real money is transferred.' :
+          checkout.status === 'loading' ? 'Checking online payment availability…' : 'Online payment unavailable. Contact your property office to pay.'}
       </p>
       {summary.status === 'error' ? (
         <ErrorState description={summary.error ?? undefined} onRetry={summary.reload} />
@@ -136,10 +139,10 @@ export function TenantPaymentsPage() {
       {summary.data ? (
         <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[
-            { id: 'paid', label: 'Total Paid', value: summary.data.totalPaid },
+            { id: 'paid', label: 'Actual Payments', value: summary.data.totalPaid },
             { id: 'due', label: 'Total Due', value: summary.data.currentDue },
             { id: 'overdue', label: 'Total Overdue', value: summary.data.overdue },
-            { id: 'month', label: 'This Month', value: summary.data.currentMonthPaid },
+            { id: 'test', label: 'Test Mode Applied', value: summary.data.testPaid },
           ].map((m) => (
             <StatCard
               key={m.id}
@@ -226,6 +229,7 @@ export function TenantPaymentsPage() {
                 <StatusPill value={r.statusLabel} />
                 <p>
                   {formatShortDate(r.date)} · {formatINR(r.amount)}
+                  {r.payment?.isTest ? ' · Razorpay Test Mode' : ''}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -260,6 +264,8 @@ export function TenantPaymentsPage() {
           <DataTable<Invoice>
             columns={[
               { id: 'invoiceNumber', header: 'Invoice', accessor: 'invoiceNumber', sortable: true },
+              { id: 'propertyName', header: 'Property', accessor: 'propertyName' },
+              { id: 'dueDate', header: 'Due date', render: (r) => formatShortDate(r.dueDate) },
               {
                 id: 'billingPeriod',
                 header: 'Billing month',
@@ -286,7 +292,7 @@ export function TenantPaymentsPage() {
                     variant="ghost"
                     onClick={() => navigate(invoiceDetailPath('tenant', r.id))}
                   >
-                    View
+                    {checkout.data?.available && eligibleForOnlinePayment(r) ? 'Pay Now (Test Mode)' : 'View'}
                   </Button>
                 ),
               },

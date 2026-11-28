@@ -42,7 +42,7 @@ export function TenantDashboardPage() {
   }, [userId]);
   const { data, status, error, reload } = useAsyncResource(loader);
 
-  const paidPercent = data?.rent.total ? Math.min(100,Math.round(data.rent.paid/data.rent.total*100)) : 0;
+  const paidPercent = data?.rent.total ? Math.min(100,Math.round((data.rent.paid+data.rent.testPaid)/data.rent.total*100)) : 0;
 
   return (
     <div>
@@ -83,7 +83,7 @@ export function TenantDashboardPage() {
                   <p className="mt-1 font-semibold">{formatINR(data.rent.total)}</p>
                 </div>
                 <div>
-                  <p className="typo-muted">Paid</p>
+                  <p className="typo-muted">Actually Paid</p>
                   <p className="mt-1 font-semibold text-success">{formatINR(data.rent.paid)}</p>
                 </div>
                 <div>
@@ -91,6 +91,7 @@ export function TenantDashboardPage() {
                   <p className="mt-1 font-semibold text-danger">{formatINR(data.rent.due)}</p>
                 </div>
               </div>
+              {data.rent.testPaid > 0 ? <p className="typo-helper mt-2">Test Mode applied this month: {formatINR(data.rent.testPaid)}</p> : null}
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-primary-soft">
                 <div className="h-full rounded-full bg-primary" style={{ width: `${paidPercent}%` }} />
               </div>

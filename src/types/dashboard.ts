@@ -87,6 +87,7 @@ export interface TenantDashboardData {
   rent: {
     total: number;
     paid: number;
+    testPaid: number;
     due: number;
     dueDate: string;
   };
